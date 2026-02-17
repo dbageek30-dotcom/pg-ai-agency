@@ -4,17 +4,25 @@ import psycopg2
 import sys
 from json import dumps
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+
+# Chargement des variables d'environnement
+load_dotenv()
 
 # Fix pour l'import des modules locaux
 sys.path.append(os.getcwd())
 from llm.client import OllamaClient
 
+
 def run_ingestion():
     ai = OllamaClient()
     
-    # --- CONFIGURATION DU CHEMIN RÉEL ---
-    base_dir = "/var/lib/postgresql/pg-ai-agency/documentation/postgresql/18/admin"
-    
+    # --- CONFIGURATION VIA .env ---
+    base_dir = os.getenv(
+        "DOC_BASE_DIR",
+        "/var/lib/postgresql/pg-ai-agency/documentation/postgresql/18/admin"
+    )
+
     if not os.path.exists(base_dir):
         print(f"❌ ERREUR : Le dossier n'existe pas : {base_dir}")
         return
@@ -24,10 +32,16 @@ def run_ingestion():
         print(f"❌ ERREUR : Aucun fichier .html trouvé dans {base_dir}")
         return
 
-    print(f"🔍 Scan terminé : {len(files)} fichiers détectés dans l'Admin Guide.")
+    print(f"🔍 Scan terminé : {len(files)} fichiers détectés dans le dossier cible.")
 
     try:
-        conn = psycopg2.connect(dbname="ai_agency_db", user="rag", host="localhost")
+        conn = psycopg2.connect(
+            dbname=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASS"),
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT")
+        )
         cur = conn.cursor()
         
         print("🧹 Nettoyage de la table documents...")
@@ -50,44 +64,61 @@ def run_ingestion():
 
                 chunks_count_before = total_chunks
 
-                # 1. Extraction VariableList (Termes techniques)
+                # 1️⃣ Extraction VariableList (Termes techniques)
                 for vlist in soup.find_all('div', class_='variablelist'):
                     items = vlist.find_all(['dt', 'dd'])
                     for i in range(0, len(items) - 1, 2):
                         term = items[i].get_text(strip=True)
                         definition = items[i+1].get_text(separator=' ', strip=True)
                         
-                        content = f"Context: {parent_chapter} > {page_title}\nTerm: {term}\nDefinition: {definition}"
+                        content = (
+                            f"Context: {parent_chapter} > {page_title}\n"
+                            f"Term: {term}\n"
+                            f"Definition: {definition}"
+                        )
+
                         meta = {
-                            "source": fname, 
-                            "title": page_title, 
-                            "section": term, 
+                            "source": fname,
+                            "title": page_title,
+                            "section": term,
                             "type": "definition"
                         }
                         
                         emb = ai.get_embedding(content)
+
                         cur.execute(
-                            "INSERT INTO documents (source, content, metadata, embedding) VALUES (%s, %s, %s, %s)",
+                            """
+                            INSERT INTO documents (source, content, metadata, embedding)
+                            VALUES (%s, %s, %s, %s)
+                            """,
                             (f_path, content, dumps(meta), emb)
                         )
                         total_chunks += 1
 
-                # 2. Extraction Blocs de Code et Paragraphes
+                # 2️⃣ Extraction Paragraphes & Blocs de Code
                 for p in soup.find_all(['p', 'pre']):
-                    # On évite de dupliquer ce qui est déjà dans une liste
                     if not p.find_parent('div', class_='variablelist'):
                         text = p.get_text(separator=' ', strip=True)
                         if len(text) > 80:
-                            content = f"Context: {parent_chapter} > {page_title}\nContent: {text}"
+                            content = (
+                                f"Context: {parent_chapter} > {page_title}\n"
+                                f"Content: {text}"
+                            )
+
                             meta = {
-                                "source": fname, 
-                                "title": page_title, 
-                                "section": "General", 
+                                "source": fname,
+                                "title": page_title,
+                                "section": "General",
                                 "type": "content"
                             }
+
                             emb = ai.get_embedding(content)
+
                             cur.execute(
-                                "INSERT INTO documents (source, content, metadata, embedding) VALUES (%s, %s, %s, %s)",
+                                """
+                                INSERT INTO documents (source, content, metadata, embedding)
+                                VALUES (%s, %s, %s, %s)
+                                """,
                                 (f_path, content, dumps(meta), emb)
                             )
                             total_chunks += 1
@@ -97,9 +128,15 @@ def run_ingestion():
         conn.commit()
         print(f"\n🚀 Ingestion réussie ! Total : {total_chunks} chunks insérés.")
         
-        # --- PETITE VALIDATION SQL ---
-        cur.execute("SELECT metadata->>'section', left(content, 60) FROM documents WHERE metadata->>'type' = 'definition' LIMIT 3;")
+        # --- VALIDATION ---
+        cur.execute("""
+            SELECT metadata->>'section', left(content, 60)
+            FROM documents
+            WHERE metadata->>'type' = 'definition'
+            LIMIT 3;
+        """)
         check = cur.fetchall()
+
         print("\n📊 Échantillon de validation (Définitions) :")
         for row in check:
             print(f"   - [{row[0]}] : {row[1]}...")
@@ -110,5 +147,7 @@ def run_ingestion():
         cur.close()
         conn.close()
 
+
 if __name__ == "__main__":
     run_ingestion()
+
