@@ -219,3 +219,4 @@ __pycache__/
 # Data & Large files
 *.log
 *.sqlite3
+.env
