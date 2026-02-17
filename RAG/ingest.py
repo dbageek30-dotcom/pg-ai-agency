@@ -27,7 +27,7 @@ def run_ingestion():
     print(f"🔍 Scan terminé : {len(files)} fichiers détectés dans l'Admin Guide.")
 
     try:
-        conn = psycopg2.connect(dbname="rag", user="postgres", host="localhost")
+        conn = psycopg2.connect(dbname="ai_agency_db", user="rag", host="localhost")
         cur = conn.cursor()
         
         print("🧹 Nettoyage de la table documents...")
