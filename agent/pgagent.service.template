@@ -1,0 +1,17 @@
+[Unit]
+Description=PostgreSQL AI Agent
+After=network.target
+
+[Service]
+Type=simple
+User=postgres
+WorkingDirectory=/opt/pgagent
+Environment="AGENT_TOKEN=__TOKEN__"
+ExecStart=/usr/bin/python3 /opt/pgagent/server.py
+Restart=always
+RestartSec=5
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,5 @@
+{
+    "port": "__PORT__",
+    "allowed_commands": "all"
+}
+
