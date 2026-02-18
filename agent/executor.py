@@ -2,17 +2,24 @@ import subprocess
 import shlex
 import os
 import json
+import shutil
 
 USE_SANDBOX = os.environ.get("AGENT_SANDBOX", "1") == "1"
 
-# Chargement de la allowlist depuis le JSON
+# Charger la allowlist JSON
 ALLOWLIST_PATH = os.path.join(os.path.dirname(__file__), "security", "allowed_tools.json")
 
 with open(ALLOWLIST_PATH, "r") as f:
-    ALLOWED_TOOLS = json.load(f)
+    CONFIG = json.load(f)
 
-# On récupère uniquement les chemins binaires
-ALLOWED_BINARIES = list(ALLOWED_TOOLS.values())
+ALLOWED_TOOL_NAMES = CONFIG.get("allowed_tools", [])
+
+# Résoudre les chemins complets des binaires
+ALLOWED_BINARIES = []
+for tool in ALLOWED_TOOL_NAMES:
+    path = shutil.which(tool)
+    if path:
+        ALLOWED_BINARIES.append(path)
 
 
 def build_bwrap_command(command: str) -> list:
@@ -32,14 +39,13 @@ def build_bwrap_command(command: str) -> list:
         # /tmp privé
         "--tmpfs", "/tmp",
 
-        # On autorise /usr en lecture seule
+        # Autoriser /usr en lecture seule
         "--ro-bind", "/usr", "/usr",
     ]
 
-    # On autorise uniquement les binaires explicitement listés
+    # Autoriser uniquement les binaires explicitement listés
     for binary in ALLOWED_BINARIES:
-        if os.path.exists(binary):
-            cmd += ["--ro-bind", binary, binary]
+        cmd += ["--ro-bind", binary, binary]
 
     # Commande finale
     cmd += shlex.split(command)
