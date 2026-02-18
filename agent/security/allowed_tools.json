@@ -1,6 +1,7 @@
 {
   "allowed_tools": [
     "patroni",
+    "patronictl",
     "pgbackrest",
     "psql",
     "postgres",
