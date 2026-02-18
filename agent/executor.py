@@ -23,34 +23,37 @@ for tool in ALLOWED_TOOL_NAMES:
 
 
 def build_bwrap_command(command: str) -> list:
-    """
-    Construit une commande bubblewrap (bwrap) sandboxée.
-    """
     cmd = [
         "bwrap",
         "--unshare-all",
         "--die-with-parent",
         "--new-session",
 
-        # Filesystem minimal
         "--proc", "/proc",
         "--dev", "/dev",
 
-        # /tmp privé
-        "--tmpfs", "/tmp",
-
-        # Autoriser /usr en lecture seule
+        # FS minimal mais fonctionnel
         "--ro-bind", "/usr", "/usr",
+        "--ro-bind", "/bin", "/bin",
+        "--ro-bind", "/lib", "/lib",
+        "--ro-bind", "/lib64", "/lib64",
+        "--ro-bind", "/etc", "/etc",
+
+        "--tmpfs", "/tmp",
     ]
 
-    # Autoriser uniquement les binaires explicitement listés
-    for binary in ALLOWED_BINARIES:
-        cmd += ["--ro-bind", binary, binary]
+    # Résolution du binaire en chemin absolu
+    args = shlex.split(command)
+    tool = args[0]
 
-    # Commande finale
-    cmd += shlex.split(command)
+    resolved = shutil.which(tool)
+    if not resolved:
+        raise RuntimeError(f"Tool {tool} not found")
+
+    args[0] = resolved
+    cmd += args
+
     return cmd
-
 
 def run_command(command: str) -> dict:
     """
