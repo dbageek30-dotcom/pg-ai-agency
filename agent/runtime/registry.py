@@ -1,9 +1,10 @@
 import json
 import os
-from .discovery import discover_binaries
+# Import corrigé : passage en import absolu pour la structure v1.2.1
+from runtime.discovery import discover_binaries
 
 REGISTRY_FILE = "/opt/pgagent/runtime/registry.json"
-# Fallback pour le développement local si le chemin /opt n'existe pas
+
 if not os.path.exists("/opt/pgagent"):
     REGISTRY_FILE = os.path.join(os.path.dirname(__file__), "registry.json")
 
@@ -20,7 +21,9 @@ def get_binary_path(tool_name):
     if not os.path.exists(REGISTRY_FILE):
         refresh_registry()
         
-    with open(REGISTRY_FILE, "r") as f:
-        registry = json.load(f)
-    
-    return registry.get("binaries", {}).get(tool_name)
+    try:
+        with open(REGISTRY_FILE, "r") as f:
+            registry = json.load(f)
+        return registry.get("binaries", {}).get(tool_name)
+    except Exception:
+        return None

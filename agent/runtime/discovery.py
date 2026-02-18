@@ -1,10 +1,9 @@
 import os
 import glob
 import json
-import shutil
 from datetime import datetime
 
-# Dossiers où chercher les binaires
+# Dossiers où chercher les binaires (ajout de chemins courants pour PG)
 SEARCH_PATHS = [
     "/usr/bin",
     "/usr/local/bin",
@@ -22,6 +21,7 @@ def discover_binaries():
     }
 
     for pattern in SEARCH_PATHS:
+        # glob.glob gère les jokers comme '*' pour les versions de Postgres
         for base_path in glob.glob(pattern):
             if not os.path.isdir(base_path):
                 continue
@@ -30,13 +30,15 @@ def discover_binaries():
                 with os.scandir(base_path) as it:
                     for entry in it:
                         # On ne garde que les fichiers exécutables
-                        if entry.is_file() and os.access(entry.path, os.X_OK):
-                            # Si le binaire existe déjà (ex: psql dans /usr/bin 
-                            # et dans /usr/lib/pg/bin), on garde le premier trouvé
-                            if entry.name not in registry["binaries"]:
-                                registry["binaries"][entry.name] = entry.path
+                        try:
+                            if entry.is_file() and os.access(entry.path, os.X_OK):
+                                # Priorité au premier trouvé (souvent le chemin système standard)
+                                if entry.name not in registry["binaries"]:
+                                    registry["binaries"][entry.name] = entry.path
+                        except OSError:
+                            continue
             except PermissionError:
-                continue # On ignore les dossiers où on n'a pas accès
+                continue 
 
     return registry
 

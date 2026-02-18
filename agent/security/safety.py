@@ -1,4 +1,3 @@
-# security/safety.py
 import re
 
 # Patterns dangereux hors guillemets
@@ -18,19 +17,11 @@ DANGEROUS_PATTERNS = [
 ]
 
 def strip_quoted(text: str) -> str:
-    """
-    Supprime le contenu entre guillemets simples ou doubles.
-    Exemple :
-        "psql -c 'SELECT 1;'" -> "psql -c ''"
-    """
+    """Supprime le contenu entre guillemets pour ne pas bloquer le SQL légitime."""
     return re.sub(r"'[^']*'|\"[^\"]*\"", "''", text)
 
 def is_safe(command: str) -> bool:
-    """
-    Vérifie si une commande est sûre.
-    - On ignore les caractères dangereux dans les quotes
-    - On bloque les patterns shell dangereux
-    """
+    """Vérifie si une commande est sûre (hors contenu des quotes)."""
     cleaned = strip_quoted(command)
 
     # Bloquer les points-virgules hors quotes
@@ -44,7 +35,8 @@ def is_safe(command: str) -> bool:
 
     return True
 
-def get_unsafe_reason(command: str) -> str | None:
+def get_unsafe_reason(command: str) -> str:
+    """Explique pourquoi une commande est refusée."""
     cleaned = strip_quoted(command)
 
     if ";" in cleaned:
@@ -54,5 +46,4 @@ def get_unsafe_reason(command: str) -> str | None:
         if re.search(pattern, cleaned):
             return f"Unsafe pattern detected: {pattern}"
 
-    return None
-
+    return "Unknown safety violation"

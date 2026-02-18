@@ -3,34 +3,34 @@ import shlex
 import os
 import json
 import shutil
-from .runtime.registry import get_binary_path
-from .runtime.audit import log_execution, init_db
-from .security.allowlist import is_tool_allowed
-from .security.safety import is_safe, get_unsafe_reason
 
-# Initialisation de la base d'audit
-init_db()
+# Imports corrigés (Absolus pour v1.2.1)
+from runtime.registry import get_binary_path
+from runtime.audit import log_execution
+from security.allowlist import is_tool_allowed
+from security.safety import is_safe, get_unsafe_reason
 
 USE_SANDBOX = os.environ.get("AGENT_SANDBOX", "1") == "1"
 
-# Chargement de la allowlist pour Bubblewrap
+# Chargement dynamique du chemin de la allowlist
 ALLOWLIST_PATH = os.path.join(os.path.dirname(__file__), "security", "allowed_tools.json")
 
 def load_allowed_tools():
     """Charge la liste brute des noms d'outils autorisés."""
     try:
-        with open(ALLOWLIST_PATH, "r") as f:
-            config = json.load(f)
-        return config.get("allowed_tools", [])
-    except Exception as e:
-        return []
+        if os.path.exists(ALLOWLIST_PATH):
+            with open(ALLOWLIST_PATH, "r") as f:
+                config = json.load(f)
+            return config.get("allowed_tools", [])
+    except Exception:
+        pass
+    return []
 
 ALLOWED_TOOL_NAMES = load_allowed_tools()
 
 def build_bwrap_command(command: str) -> list:
     """
-    Construit la commande bwrap. 
-    Note: La sécurité haute-niveau est déjà traitée par run_command.
+    Construit la commande bwrap pour isoler l'exécution.
     """
     args = shlex.split(command)
     if not args:
@@ -46,6 +46,7 @@ def build_bwrap_command(command: str) -> list:
 
     tool_dir = os.path.dirname(resolved_path)
     
+    # Construction des arguments Bubblewrap
     cmd = [
         "bwrap",
         "--unshare-all",
@@ -58,10 +59,12 @@ def build_bwrap_command(command: str) -> list:
         "--ro-bind", "/lib", "/lib",
         "--ro-bind", "/lib64", "/lib64",
         "--ro-bind", "/etc", "/etc",
+        "--ro-bind", "/usr/bin", "/usr/bin", # Ajout explicite pour certains binaires
         "--ro-bind", tool_dir, tool_dir,
         "--tmpfs", "/tmp",
     ]
 
+    # Montage du socket PostgreSQL pour permettre la connexion locale
     if os.path.exists("/var/run/postgresql"):
         cmd += ["--ro-bind", "/var/run/postgresql", "/var/run/postgresql"]
 
@@ -71,16 +74,15 @@ def build_bwrap_command(command: str) -> list:
 
 def run_command(command: str) -> dict:
     """
-    Exécute une commande avec garde-fous de sécurité et audit.
+    Exécute une commande avec isolation Bubblewrap et enregistre l'audit.
     """
-    # 1. VÉRIFICATION DE SÉCURITÉ (INTERCEPTION)
-    # On vérifie si l'outil est autorisé
+    # 1. Vérification de sécurité Allowlist
     if not is_tool_allowed(command):
         error_msg = f"Tool not allowed in security policy."
         log_execution(command, "REJECTED_BY_ALLOWLIST", -1, "", error_msg)
         return {"stdout": "", "stderr": error_msg, "exit_code": -1}
 
-    # On vérifie si la syntaxe est sûre (pas de ; | && etc.)
+    # 2. Vérification de sécurité Patterns (Safety)
     if not is_safe(command):
         reason = get_unsafe_reason(command)
         error_msg = f"Unsafe command detected: {reason}"
@@ -99,6 +101,7 @@ def run_command(command: str) -> dict:
                 cmd_list[0] = resolved
             executed_cmd_str = " ".join(cmd_list)
 
+        # Exécution du processus
         process = subprocess.Popen(
             cmd_list,
             stdout=subprocess.PIPE,
@@ -114,7 +117,7 @@ def run_command(command: str) -> dict:
         stderr = str(e)
         exit_code = -1
 
-    # ENREGISTREMENT DANS L'AUDIT
+    # 3. Enregistrement systématique dans l'Audit SQLite
     log_execution(command, executed_cmd_str, exit_code, stdout, stderr)
 
     return {

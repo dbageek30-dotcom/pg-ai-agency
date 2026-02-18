@@ -4,21 +4,19 @@ import os
 import logging
 import time
 
-# Imports relatifs liés à notre nouvelle structure
-from .executor import run_command
-from .security.allowlist import is_tool_allowed, extract_tool
-from .security.safety import is_safe, get_unsafe_reason
-from .runtime.audit import get_last_logs
-from .runtime.registry import refresh_registry
+# Imports corrigés pour la structure v1.2.1
+from executor import run_command
+from security.allowlist import is_tool_allowed, extract_tool
+from security.safety import is_safe, get_unsafe_reason
+from runtime.audit import get_last_logs, log_execution, init_db
+from runtime.registry import refresh_registry, get_binary_path
 
 # ------------------------------------------------------------
 # Charger la configuration
 # ------------------------------------------------------------
-# En prod, la config est dans /opt/pgagent/config/config.json
 CONFIG_PATH = os.environ.get("AGENT_CONFIG", os.path.join(os.path.dirname(__file__), "..", "config", "config.json"))
 
 if not os.path.exists(CONFIG_PATH):
-    # Fallback pour le mode dev
     CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json.template")
 
 try:
@@ -30,11 +28,11 @@ except Exception:
 PORT = int(os.environ.get("AGENT_PORT", CONFIG.get("port", 5050)))
 
 # ------------------------------------------------------------
-# Logging (Dossier /opt/pgagent/logs/ si possible)
+# Logging
 # ------------------------------------------------------------
 LOG_FILE = "/opt/pgagent/logs/pgagent.log"
-if not os.access(os.path.dirname(LOG_FILE), os.W_OK):
-    LOG_FILE = "pgagent.log" # Fallback local
+# Création du dossier de log si inexistant
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 logging.basicConfig(
     filename=LOG_FILE,
@@ -42,13 +40,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
 
-# ------------------------------------------------------------
-# Fonction d'authentification
-# ------------------------------------------------------------
 def check_auth(req):
     expected = os.environ.get("AGENT_TOKEN", "")
     auth = req.headers.get("Authorization", "")
-    # Supporte "Bearer token" ou le token brut pour la compatibilité
     return auth == f"Bearer {expected}" or auth == expected
 
 # ------------------------------------------------------------
@@ -62,6 +56,7 @@ def ping():
     return jsonify({
         "status": "ok",
         "service": "pg-ai-agent",
+        "version": "1.2.1",
         "timestamp": time.time()
     })
 
@@ -84,7 +79,7 @@ def exec_command():
         logging.warning(f"[DENY] IP={client_ip} CMD='{command}' TOOL='{tool}'")
         return jsonify({"error": f"Command '{tool}' not allowed"}), 403
 
-    # 2. Vérification patterns dangereux
+    # 2. Vérification patterns dangereux (Harmonisé sur 'is_safe')
     if not is_safe(command):
         reason = get_unsafe_reason(command)
         logging.warning(f"[UNSAFE] IP={client_ip} CMD='{command}' REASON='{reason}'")
@@ -102,15 +97,27 @@ def exec_command():
     result = run_command(command)
 
     duration = round(time.time() - start, 3)
+    
+    # Audit en base SQLite (Harmonisé sur 'log_execution')
+    try:
+        log_execution(
+            command=command,
+            executed_command=result.get("command_executed", ""),
+            exit_code=result.get("exit_code", -1),
+            stdout=result.get("stdout", ""),
+            stderr=result.get("stderr", "")
+        )
+    except Exception as e:
+        logging.error(f"Audit log failed: {e}")
+
     logging.info(
-        f"[RESULT] IP={client_ip} CMD='{command}' EXIT={result['exit_code']} TIME={duration}s"
+        f"[RESULT] IP={client_ip} EXIT={result['exit_code']} TIME={duration}s"
     )
 
     return jsonify(result)
 
 @app.route("/audit", methods=["GET"])
 def get_audit():
-    """Récupère les logs SQLite via l'API."""
     if not check_auth(request):
         return jsonify({"error": "Unauthorized"}), 401
     
@@ -121,7 +128,7 @@ def get_audit():
 # Lancement
 # ------------------------------------------------------------
 if __name__ == "__main__":
-    # Scan des outils au démarrage
-    print("🔍 Scanning tools...")
-    refresh_registry()
+    print("🔍 Initializing PgAgent v1.2.1...")
+    init_db()          # Prépare SQLite
+    refresh_registry() # Scan les binaires
     app.run(host="0.0.0.0", port=PORT)
