@@ -3,87 +3,123 @@ import shlex
 import os
 import json
 import shutil
+from .runtime.registry import get_binary_path
+from .runtime.audit import log_execution, init_db
+from .security.allowlist import is_tool_allowed
+from .security.safety import is_safe, get_unsafe_reason
+
+# Initialisation de la base d'audit
+init_db()
 
 USE_SANDBOX = os.environ.get("AGENT_SANDBOX", "1") == "1"
 
-# Charger la allowlist JSON
+# Chargement de la allowlist pour Bubblewrap
 ALLOWLIST_PATH = os.path.join(os.path.dirname(__file__), "security", "allowed_tools.json")
 
-with open(ALLOWLIST_PATH, "r") as f:
-    CONFIG = json.load(f)
+def load_allowed_tools():
+    """Charge la liste brute des noms d'outils autorisés."""
+    try:
+        with open(ALLOWLIST_PATH, "r") as f:
+            config = json.load(f)
+        return config.get("allowed_tools", [])
+    except Exception as e:
+        return []
 
-ALLOWED_TOOL_NAMES = CONFIG.get("allowed_tools", [])
-
-# Résoudre les chemins complets des binaires
-ALLOWED_BINARIES = []
-for tool in ALLOWED_TOOL_NAMES:
-    path = shutil.which(tool)
-    if path:
-        ALLOWED_BINARIES.append(path)
-
+ALLOWED_TOOL_NAMES = load_allowed_tools()
 
 def build_bwrap_command(command: str) -> list:
+    """
+    Construit la commande bwrap. 
+    Note: La sécurité haute-niveau est déjà traitée par run_command.
+    """
+    args = shlex.split(command)
+    if not args:
+        raise ValueError("Commande vide")
+    
+    tool_name = args[0]
+
+    # Résolution du chemin via le registry
+    resolved_path = get_binary_path(tool_name) or shutil.which(tool_name)
+        
+    if not resolved_path:
+        raise RuntimeError(f"Tool '{tool_name}' not found on system.")
+
+    tool_dir = os.path.dirname(resolved_path)
+    
     cmd = [
         "bwrap",
         "--unshare-all",
         "--die-with-parent",
         "--new-session",
-
         "--proc", "/proc",
         "--dev", "/dev",
-
-        # FS minimal mais fonctionnel
         "--ro-bind", "/usr", "/usr",
         "--ro-bind", "/bin", "/bin",
         "--ro-bind", "/lib", "/lib",
         "--ro-bind", "/lib64", "/lib64",
         "--ro-bind", "/etc", "/etc",
-
+        "--ro-bind", tool_dir, tool_dir,
         "--tmpfs", "/tmp",
     ]
 
-    # Résolution du binaire en chemin absolu
-    args = shlex.split(command)
-    tool = args[0]
+    if os.path.exists("/var/run/postgresql"):
+        cmd += ["--ro-bind", "/var/run/postgresql", "/var/run/postgresql"]
 
-    resolved = shutil.which(tool)
-    if not resolved:
-        raise RuntimeError(f"Tool {tool} not found")
-
-    args[0] = resolved
+    args[0] = resolved_path
     cmd += args
-
     return cmd
 
 def run_command(command: str) -> dict:
     """
-    Exécute une commande locale dans une sandbox bwrap (si activée).
+    Exécute une commande avec garde-fous de sécurité et audit.
     """
+    # 1. VÉRIFICATION DE SÉCURITÉ (INTERCEPTION)
+    # On vérifie si l'outil est autorisé
+    if not is_tool_allowed(command):
+        error_msg = f"Tool not allowed in security policy."
+        log_execution(command, "REJECTED_BY_ALLOWLIST", -1, "", error_msg)
+        return {"stdout": "", "stderr": error_msg, "exit_code": -1}
+
+    # On vérifie si la syntaxe est sûre (pas de ; | && etc.)
+    if not is_safe(command):
+        reason = get_unsafe_reason(command)
+        error_msg = f"Unsafe command detected: {reason}"
+        log_execution(command, "REJECTED_BY_SAFETY", -1, "", error_msg)
+        return {"stdout": "", "stderr": error_msg, "exit_code": -1}
+
+    executed_cmd_str = command
     try:
         if USE_SANDBOX:
-            cmd = build_bwrap_command(command)
+            cmd_list = build_bwrap_command(command)
+            executed_cmd_str = " ".join(cmd_list)
         else:
-            cmd = shlex.split(command)
+            cmd_list = shlex.split(command)
+            resolved = get_binary_path(cmd_list[0]) or shutil.which(cmd_list[0])
+            if resolved:
+                cmd_list[0] = resolved
+            executed_cmd_str = " ".join(cmd_list)
 
         process = subprocess.Popen(
-            cmd,
+            cmd_list,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
 
         stdout, stderr = process.communicate()
-
-        return {
-            "stdout": stdout,
-            "stderr": stderr,
-            "exit_code": process.returncode
-        }
+        exit_code = process.returncode
 
     except Exception as e:
-        return {
-            "stdout": "",
-            "stderr": str(e),
-            "exit_code": -1
-        }
+        stdout = ""
+        stderr = str(e)
+        exit_code = -1
 
+    # ENREGISTREMENT DANS L'AUDIT
+    log_execution(command, executed_cmd_str, exit_code, stdout, stderr)
+
+    return {
+        "stdout": stdout,
+        "stderr": stderr,
+        "exit_code": exit_code,
+        "command_executed": executed_cmd_str
+    }

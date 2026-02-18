@@ -2,6 +2,7 @@
   "allowed_tools": [
     "patroni",
     "patronictl",
+    "whoami",
     "pgbackrest",
     "psql",
     "postgres",
