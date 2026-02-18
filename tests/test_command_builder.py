@@ -17,9 +17,8 @@ env = {
     "BACKUP_DIR": "/var/backups/pg"
 }
 
-builder = CommandBuilder(env)
-cmd = builder.build(manifest)
-
-print("\n=== COMMANDE GÉNÉRÉE ===")
-print(cmd)
+def test_command_builder_generates_expected_command():
+    builder = CommandBuilder(env)
+    cmd = builder.build(manifest)
+    assert cmd == "pg_basebackup -D /var/backups/pg -X stream --progress"
 
