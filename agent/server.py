@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 from executor import run_command
+from security.allowlist import is_tool_allowed, extract_tool
+from security.safety import is_safe, get_unsafe_reason
 import json
 import os
 import logging
@@ -36,25 +38,6 @@ def check_auth(request):
     return auth == f"Bearer {expected}"
 
 # ------------------------------------------------------------
-# Allowlist des outils autorisés
-# ------------------------------------------------------------
-ALLOWED_TOOLS = {
-    "patroni",
-    "pgbackrest",
-    "psql",
-    "postgres",
-    "pg_ctl",
-    "systemctl",  # tu peux restreindre plus tard
-}
-
-def extract_tool(command: str) -> str:
-    """
-    Extrait le premier mot de la commande (le binaire).
-    Exemple : "pgbackrest backup" → "pgbackrest"
-    """
-    return command.strip().split()[0]
-
-# ------------------------------------------------------------
 # Application Flask
 # ------------------------------------------------------------
 app = Flask(__name__)
@@ -79,12 +62,23 @@ def exec_command():
     client_ip = request.remote_addr
 
     # ------------------------------------------------------------
-    # Vérification allowlist
+    # Vérification allowlist dynamique
     # ------------------------------------------------------------
-    tool = extract_tool(command)
-    if tool not in ALLOWED_TOOLS:
+    if not is_tool_allowed(command):
+        tool = extract_tool(command)
         logging.warning(f"[DENY] IP={client_ip} CMD='{command}' TOOL='{tool}'")
         return jsonify({"error": f"Command '{tool}' not allowed"}), 403
+
+    # ------------------------------------------------------------
+    # Vérification sécurité (patterns dangereux)
+    # ------------------------------------------------------------
+    if not is_safe(command):
+        reason = get_unsafe_reason(command)
+        logging.warning(f"[UNSAFE] IP={client_ip} CMD='{command}' REASON='{reason}'")
+        return jsonify({
+            "error": "Unsafe command",
+            "reason": reason
+        }), 400
 
     # ------------------------------------------------------------
     # Mode dry-run

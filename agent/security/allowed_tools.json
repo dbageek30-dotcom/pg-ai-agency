@@ -1,0 +1,15 @@
+{
+  "allowed_tools": [
+    "patroni",
+    "pgbackrest",
+    "psql",
+    "postgres",
+    "pg_ctl",
+    "repmgr",
+    "pg_isready",
+    "pg_dump",
+    "pg_restore",
+    "systemctl"
+  ]
+}
+
