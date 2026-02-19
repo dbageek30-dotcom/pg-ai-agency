@@ -4,18 +4,17 @@ import os
 import logging
 import time
 
-# Imports corrigés pour la structure v1.2.1
+# Imports structure v1.2.1
 from executor import run_command
 from security.allowlist import is_tool_allowed, extract_tool
 from security.safety import is_safe, get_unsafe_reason
 from runtime.audit import get_last_logs, log_execution, init_db
-from runtime.registry import refresh_registry, get_binary_path
+from runtime.registry import refresh_registry, get_registry
 
 # ------------------------------------------------------------
-# Charger la configuration
+# Configuration
 # ------------------------------------------------------------
-CONFIG_PATH = os.environ.get("AGENT_CONFIG", os.path.join(os.path.dirname(__file__), "..", "config", "config.json"))
-
+CONFIG_PATH = os.environ.get("AGENT_CONFIG", "/opt/pgagent/config/config.json")
 if not os.path.exists(CONFIG_PATH):
     CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json.template")
 
@@ -31,7 +30,6 @@ PORT = int(os.environ.get("AGENT_PORT", CONFIG.get("port", 5050)))
 # Logging
 # ------------------------------------------------------------
 LOG_FILE = "/opt/pgagent/logs/pgagent.log"
-# Création du dossier de log si inexistant
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 logging.basicConfig(
@@ -43,6 +41,7 @@ logging.basicConfig(
 def check_auth(req):
     expected = os.environ.get("AGENT_TOKEN", "")
     auth = req.headers.get("Authorization", "")
+    # Support "Bearer TOKEN" ou "TOKEN" direct
     return auth == f"Bearer {expected}" or auth == expected
 
 # ------------------------------------------------------------
@@ -50,15 +49,21 @@ def check_auth(req):
 # ------------------------------------------------------------
 app = Flask(__name__)
 
-@app.route("/ping", methods=["GET"])
 @app.route("/health", methods=["GET"])
-def ping():
+def health():
     return jsonify({
         "status": "ok",
         "service": "pg-ai-agent",
         "version": "1.2.1",
         "timestamp": time.time()
     })
+
+@app.route("/registry", methods=["GET"])
+def get_agent_registry():
+    """Permet à l'agence de découvrir les outils (ex: psql-18)"""
+    if not check_auth(request):
+        return jsonify({"error": "Unauthorized"}), 401
+    return jsonify(get_registry())
 
 @app.route("/exec", methods=["POST"])
 def exec_command():
@@ -73,24 +78,23 @@ def exec_command():
     dry_run = data.get("dry_run", False)
     client_ip = request.remote_addr
 
-    # 1. Vérification allowlist
+    # 1. Allowlist
     if not is_tool_allowed(command):
         tool = extract_tool(command)
         logging.warning(f"[DENY] IP={client_ip} CMD='{command}' TOOL='{tool}'")
         return jsonify({"error": f"Command '{tool}' not allowed"}), 403
 
-    # 2. Vérification patterns dangereux (Harmonisé sur 'is_safe')
+    # 2. Safety (Patterns dangereux)
     if not is_safe(command):
         reason = get_unsafe_reason(command)
         logging.warning(f"[UNSAFE] IP={client_ip} CMD='{command}' REASON='{reason}'")
         return jsonify({"error": "Unsafe command", "reason": reason}), 400
 
-    # 3. Mode dry-run
+    # 3. Dry-run
     if dry_run:
-        logging.info(f"[DRY-RUN] IP={client_ip} CMD='{command}'")
         return jsonify({"dry_run": True, "command": command})
 
-    # 4. Exécution réelle
+    # 4. Exécution
     start = time.time()
     logging.info(f"[REQUEST] IP={client_ip} CMD='{command}'")
 
@@ -98,7 +102,7 @@ def exec_command():
 
     duration = round(time.time() - start, 3)
     
-    # Audit en base SQLite (Harmonisé sur 'log_execution')
+    # 5. Audit
     try:
         log_execution(
             command=command,
@@ -110,25 +114,18 @@ def exec_command():
     except Exception as e:
         logging.error(f"Audit log failed: {e}")
 
-    logging.info(
-        f"[RESULT] IP={client_ip} EXIT={result['exit_code']} TIME={duration}s"
-    )
-
+    logging.info(f"[RESULT] IP={client_ip} EXIT={result['exit_code']} TIME={duration}s")
     return jsonify(result)
 
 @app.route("/audit", methods=["GET"])
 def get_audit():
     if not check_auth(request):
         return jsonify({"error": "Unauthorized"}), 401
-    
     limit = request.args.get("limit", 20, type=int)
     return jsonify(get_last_logs(limit))
 
-# ------------------------------------------------------------
-# Lancement
-# ------------------------------------------------------------
 if __name__ == "__main__":
     print("🔍 Initializing PgAgent v1.2.1...")
-    init_db()          # Prépare SQLite
-    refresh_registry() # Scan les binaires
+    init_db()          
+    refresh_registry() 
     app.run(host="0.0.0.0", port=PORT)
