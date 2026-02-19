@@ -1,7 +1,7 @@
 import re
 import json
 import logging
-from agent.executor import run_command
+from executor import run_command
 
 logger = logging.getLogger(__name__)
 
