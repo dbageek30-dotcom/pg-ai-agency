@@ -1,36 +1,32 @@
 [Unit]
 Description=PostgreSQL AI Agent
 After=network.target postgresql.service
-StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-# Utilisation de l'utilisateur dédié et restreint
 User=pgagent
 Group=pgagent
-
-# Dossier contenant le code source
 WorkingDirectory=/opt/pgagent/bin
 
-# Variables injectées par install.sh
+# Variables injectées
 Environment="AGENT_TOKEN=__TOKEN__"
 Environment="AGENT_PORT=__PORT__"
 Environment="PYTHONUNBUFFERED=1"
-# On force le PYTHONPATH pour que les imports relatifs fonctionnent
 Environment="PYTHONPATH=/opt/pgagent/bin"
 
-# Utilisation du binaire Python situé dans l'environnement virtuel
-ExecStart=/opt/pgagent/venv/bin/python3 /opt/pgagent/bin/server.py
+# On lance via le venv
+ExecStart=/opt/pgagent/venv/bin/python3 server.py
 
-# Politique de redémarrage robuste
 Restart=always
 RestartSec=5
 
-# Sécurité système supplémentaire (Optionnel mais recommandé)
-# Empêche le service de gagner de nouveaux privilèges
+# Désactivation nécessaire pour Bubblewrap SUID
 NoNewPrivileges=no
-# Rend /usr, /boot et /etc en lecture seule pour ce service
+
+# Protection du système (lecture seule sur les dossiers vitaux)
 ProtectSystem=full
+# Empêche l'accès au dossier /home des autres utilisateurs
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target
