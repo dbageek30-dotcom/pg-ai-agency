@@ -10,6 +10,8 @@ from security.allowlist import is_tool_allowed, extract_tool
 from security.safety import is_safe, get_unsafe_reason
 from runtime.audit import get_last_logs, log_execution, init_db
 from runtime.registry import refresh_registry, get_registry
+# --- NOUVEL IMPORT ---
+from runtime.toolbox import ToolboxManager 
 
 # ------------------------------------------------------------
 # Configuration
@@ -41,7 +43,6 @@ logging.basicConfig(
 def check_auth(req):
     expected = os.environ.get("AGENT_TOKEN", "")
     auth = req.headers.get("Authorization", "")
-    # Support "Bearer TOKEN" ou "TOKEN" direct
     return auth == f"Bearer {expected}" or auth == expected
 
 # ------------------------------------------------------------
@@ -60,10 +61,28 @@ def health():
 
 @app.route("/registry", methods=["GET"])
 def get_agent_registry():
-    """Permet à l'agence de découvrir les outils (ex: psql-18)"""
     if not check_auth(request):
         return jsonify({"error": "Unauthorized"}), 401
     return jsonify(get_registry())
+
+# --- NOUVELLE ROUTE : EXPLORE ---
+@app.route("/explore/<tool>", methods=["GET"])
+def explore_tool(tool):
+    """Génère la boîte à outils JSON pour un binaire spécifique."""
+    if not check_auth(request):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Sécurité : On vérifie si l'outil est autorisé avant de l'explorer
+    if not is_tool_allowed(tool):
+        return jsonify({"error": f"Tool '{tool}' not allowed for exploration"}), 403
+
+    subcommand = request.args.get("sub")
+    toolbox = ToolboxManager()
+    
+    logging.info(f"[EXPLORE] Tool='{tool}' Sub='{subcommand}'")
+    result = toolbox.get_structured_help(tool, subcommand)
+    
+    return jsonify(result)
 
 @app.route("/exec", methods=["POST"])
 def exec_command():
@@ -78,31 +97,25 @@ def exec_command():
     dry_run = data.get("dry_run", False)
     client_ip = request.remote_addr
 
-    # 1. Allowlist
     if not is_tool_allowed(command):
         tool = extract_tool(command)
         logging.warning(f"[DENY] IP={client_ip} CMD='{command}' TOOL='{tool}'")
         return jsonify({"error": f"Command '{tool}' not allowed"}), 403
 
-    # 2. Safety (Patterns dangereux)
     if not is_safe(command):
         reason = get_unsafe_reason(command)
         logging.warning(f"[UNSAFE] IP={client_ip} CMD='{command}' REASON='{reason}'")
         return jsonify({"error": "Unsafe command", "reason": reason}), 400
 
-    # 3. Dry-run
     if dry_run:
         return jsonify({"dry_run": True, "command": command})
 
-    # 4. Exécution
     start = time.time()
     logging.info(f"[REQUEST] IP={client_ip} CMD='{command}'")
 
     result = run_command(command)
-
     duration = round(time.time() - start, 3)
     
-    # 5. Audit
     try:
         log_execution(
             command=command,
