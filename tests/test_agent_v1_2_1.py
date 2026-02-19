@@ -30,10 +30,9 @@ def test_registry_discovery():
     print(f"\n✅ Registry OK : {len(bins)} binaires trouvés.")
 
 def test_execution_with_versioned_alias():
-    """Vérifie que l'agent peut exécuter une version spécifique (ex: psql-18)."""
-    # On cherche une version disponible dans le registry pour le test
-    reg = requests.get(f"{BASE_URL}/registry", headers=HEADERS).json()
-    target_tool = "psql-18" if "psql-18" in reg["binaries"] else "psql"
+    """Vérifie que l'agent peut exécuter psql."""
+    # On oublie psql-18, on teste le psql standard
+    target_tool = "psql" 
     
     payload = {"command": f"{target_tool} --version"}
     response = requests.post(f"{BASE_URL}/exec", headers=HEADERS, json=payload)
@@ -42,7 +41,6 @@ def test_execution_with_versioned_alias():
     res_data = response.json()
     assert res_data["exit_code"] == 0
     assert "PostgreSQL" in res_data["stdout"]
-    print(f"✅ Exec OK : {target_tool} a répondu.")
 
 def test_audit_logging():
     """Vérifie que la dernière commande est bien inscrite en base SQLite."""

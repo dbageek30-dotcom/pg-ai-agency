@@ -4,7 +4,7 @@ import os
 import json
 import shutil
 
-# Imports corrigés (Absolus pour v1.2.1)
+# Imports v1.2.1
 from runtime.registry import get_binary_path
 from runtime.audit import log_execution
 from security.allowlist import is_tool_allowed
@@ -12,25 +12,10 @@ from security.safety import is_safe, get_unsafe_reason
 
 USE_SANDBOX = os.environ.get("AGENT_SANDBOX", "1") == "1"
 
-# Chargement dynamique du chemin de la allowlist
-ALLOWLIST_PATH = os.path.join(os.path.dirname(__file__), "security", "allowed_tools.json")
-
-def load_allowed_tools():
-    """Charge la liste brute des noms d'outils autorisés."""
-    try:
-        if os.path.exists(ALLOWLIST_PATH):
-            with open(ALLOWLIST_PATH, "r") as f:
-                config = json.load(f)
-            return config.get("allowed_tools", [])
-    except Exception:
-        pass
-    return []
-
-ALLOWED_TOOL_NAMES = load_allowed_tools()
-
 def build_bwrap_command(command: str) -> list:
     """
     Construit la commande bwrap pour isoler l'exécution.
+    Résout le binaire via le registry (prioritaire) ou le PATH.
     """
     args = shlex.split(command)
     if not args:
@@ -38,15 +23,16 @@ def build_bwrap_command(command: str) -> list:
     
     tool_name = args[0]
 
-    # Résolution du chemin via le registry
+    # 1. Résolution du chemin (Priorité au Registry pour psql-18, etc.)
     resolved_path = get_binary_path(tool_name) or shutil.which(tool_name)
         
     if not resolved_path:
-        raise RuntimeError(f"Tool '{tool_name}' not found on system.")
+        raise RuntimeError(f"Tool '{tool_name}' not found on system registry or PATH.")
 
+    # On récupère le dossier du binaire pour l'autoriser dans le sandbox
     tool_dir = os.path.dirname(resolved_path)
     
-    # Construction des arguments Bubblewrap
+    # 2. Construction des arguments Bubblewrap
     cmd = [
         "bwrap",
         "--unshare-all",
@@ -59,30 +45,31 @@ def build_bwrap_command(command: str) -> list:
         "--ro-bind", "/lib", "/lib",
         "--ro-bind", "/lib64", "/lib64",
         "--ro-bind", "/etc", "/etc",
-        "--ro-bind", "/usr/bin", "/usr/bin", # Ajout explicite pour certains binaires
-        "--ro-bind", tool_dir, tool_dir,
+        "--ro-bind", "/usr/bin", "/usr/bin",
+        "--ro-bind", tool_dir, tool_dir,  # Autorise le dossier spécifique du binaire
         "--tmpfs", "/tmp",
     ]
 
-    # Montage du socket PostgreSQL pour permettre la connexion locale
+    # 3. Montage du socket PostgreSQL pour permettre la connexion locale (UDS)
     if os.path.exists("/var/run/postgresql"):
         cmd += ["--ro-bind", "/var/run/postgresql", "/var/run/postgresql"]
 
+    # Remplacement de l'alias par le chemin absolu résolu
     args[0] = resolved_path
     cmd += args
     return cmd
 
 def run_command(command: str) -> dict:
     """
-    Exécute une commande avec isolation Bubblewrap et enregistre l'audit.
+    Point d'entrée principal : Sécurité -> Sandbox -> Audit.
     """
-    # 1. Vérification de sécurité Allowlist
+    # --- 1. SÉCURITÉ : Allowlist ---
     if not is_tool_allowed(command):
-        error_msg = f"Tool not allowed in security policy."
+        error_msg = "Tool not allowed in security policy."
         log_execution(command, "REJECTED_BY_ALLOWLIST", -1, "", error_msg)
         return {"stdout": "", "stderr": error_msg, "exit_code": -1}
 
-    # 2. Vérification de sécurité Patterns (Safety)
+    # --- 2. SÉCURITÉ : Safety Patterns ---
     if not is_safe(command):
         reason = get_unsafe_reason(command)
         error_msg = f"Unsafe command detected: {reason}"
@@ -93,15 +80,15 @@ def run_command(command: str) -> dict:
     try:
         if USE_SANDBOX:
             cmd_list = build_bwrap_command(command)
-            executed_cmd_str = " ".join(cmd_list)
         else:
             cmd_list = shlex.split(command)
             resolved = get_binary_path(cmd_list[0]) or shutil.which(cmd_list[0])
             if resolved:
                 cmd_list[0] = resolved
-            executed_cmd_str = " ".join(cmd_list)
+        
+        executed_cmd_str = " ".join(cmd_list)
 
-        # Exécution du processus
+        # --- 3. EXÉCUTION ---
         process = subprocess.Popen(
             cmd_list,
             stdout=subprocess.PIPE,
@@ -109,15 +96,20 @@ def run_command(command: str) -> dict:
             text=True
         )
 
-        stdout, stderr = process.communicate()
+        stdout, stderr = process.communicate(timeout=45) # Timeout de sécurité
         exit_code = process.returncode
 
+    except subprocess.TimeoutExpired:
+        process.kill()
+        stdout, stderr = process.communicate()
+        exit_code = 124
+        stderr = (stderr or "") + "\nError: Process timed out (45s)"
     except Exception as e:
         stdout = ""
         stderr = str(e)
         exit_code = -1
 
-    # 3. Enregistrement systématique dans l'Audit SQLite
+    # --- 4. AUDIT : Enregistrement SQLite ---
     log_execution(command, executed_cmd_str, exit_code, stdout, stderr)
 
     return {
