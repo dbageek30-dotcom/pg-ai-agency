@@ -28,7 +28,7 @@ RestartSec=5
 
 # Sécurité système supplémentaire (Optionnel mais recommandé)
 # Empêche le service de gagner de nouveaux privilèges
-NoNewPrivileges=yes
+NoNewPrivileges=no
 # Rend /usr, /boot et /etc en lecture seule pour ce service
 ProtectSystem=full
 
