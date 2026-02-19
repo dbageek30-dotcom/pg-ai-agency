@@ -65,22 +65,27 @@ def get_agent_registry():
         return jsonify({"error": "Unauthorized"}), 401
     return jsonify(get_registry())
 
-# --- NOUVELLE ROUTE : EXPLORE ---
 @app.route("/explore/<tool>", methods=["GET"])
 def explore_tool(tool):
-    """Génère la boîte à outils JSON pour un binaire spécifique."""
     if not check_auth(request):
         return jsonify({"error": "Unauthorized"}), 401
 
-    # Sécurité : On vérifie si l'outil est autorisé avant de l'explorer
     if not is_tool_allowed(tool):
-        return jsonify({"error": f"Tool '{tool}' not allowed for exploration"}), 403
+        return jsonify({"error": f"Tool '{tool}' not allowed"}), 403
+
+    # --- RÉCUPÉRATION DU CHEMIN VIA LE REGISTRY ---
+    registry = get_registry()
+    tool_path = registry.get(tool) # Le registry stocke les chemins absolus
+    
+    if not tool_path:
+        # Si pas dans le registry, on tente le nom brut au cas où
+        tool_path = tool
 
     subcommand = request.args.get("sub")
     toolbox = ToolboxManager()
     
-    logging.info(f"[EXPLORE] Tool='{tool}' Sub='{subcommand}'")
-    result = toolbox.get_structured_help(tool, subcommand)
+    logging.info(f"[EXPLORE] Path='{tool_path}' Sub='{subcommand}'")
+    result = toolbox.get_structured_help(tool_path, subcommand) # On passe le path
     
     return jsonify(result)
 
