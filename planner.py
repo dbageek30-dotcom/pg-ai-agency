@@ -1,27 +1,36 @@
 import json
-import re
-from llm.client import call_llm
+from llm.client import OllamaClient
 from security.allowlist import is_tool_allowed
 from security.safety import is_safe
 from runtime.registry import get_registry
 
-# Limites globales (production-grade)
 MAX_STEPS_PER_PLAN = 5
 MAX_JSON_CHARS = 20000
+
+
+# ------------------------------------------------------------
+# LLM client (réutilise ton infra existante)
+# ------------------------------------------------------------
+_ai = OllamaClient()
+
+
+def call_llm(prompt: str, model: str | None = None) -> str:
+    """
+    Wrapper simple autour de ton client LLM.
+    Ici on utilise le modèle 'FAST_MODEL' que tu utilises déjà
+    dans agency_expert.py, ou un défaut.
+    """
+    # On laisse le client gérer le modèle par défaut si non fourni
+    return _ai.chat(prompt, model=model)
 
 
 # ------------------------------------------------------------
 # Extraction robuste du JSON renvoyé par le LLM
 # ------------------------------------------------------------
 def extract_json(raw: str) -> str:
-    """
-    Extrait le premier bloc JSON valide dans une réponse LLM.
-    Tolère du texte autour, des explications, etc.
-    """
     if not raw:
         raise ValueError("Empty LLM response")
 
-    # Cherche le premier '{' et le dernier '}'
     start = raw.find("{")
     end = raw.rfind("}")
 
@@ -81,10 +90,6 @@ Rules:
 # Validation stricte du plan
 # ------------------------------------------------------------
 def validate_plan(plan: dict, registry: dict) -> dict:
-    """
-    Valide et nettoie un plan JSON proposé par le LLM.
-    Applique toutes les règles de sécurité.
-    """
     if not isinstance(plan, dict):
         raise ValueError("Plan must be a JSON object")
 
@@ -94,10 +99,8 @@ def validate_plan(plan: dict, registry: dict) -> dict:
     if not isinstance(plan["steps"], list):
         raise ValueError("Invalid plan: steps must be a list")
 
-    # Limite stricte
     plan["max_steps"] = min(plan.get("max_steps", 0), MAX_STEPS_PER_PLAN)
 
-    # Mode d'exécution
     mode = plan.get("mode", "readonly")
     if mode not in ["readonly", "maintenance", "change"]:
         mode = "readonly"
@@ -112,23 +115,18 @@ def validate_plan(plan: dict, registry: dict) -> dict:
         if not tool or not isinstance(args, list):
             continue
 
-        # Vérification allowlist
         if not is_tool_allowed(tool):
             continue
 
-        # Construction commande
         tool_path = registry.get(tool, tool)
         cmd = " ".join([tool_path] + args)
 
-        # Mode readonly = stricte lecture
         if mode == "readonly" and not is_safe(cmd, readonly_strict=True):
             continue
 
-        # Vérification sécurité globale
         if not is_safe(cmd):
             continue
 
-        # Normalisation on_error
         step["on_error"] = step.get("on_error", "abort")
         if step["on_error"] not in ["abort", "continue"]:
             step["on_error"] = "abort"
@@ -143,9 +141,6 @@ def validate_plan(plan: dict, registry: dict) -> dict:
 # Fonction principale : génère un plan validé
 # ------------------------------------------------------------
 def plan_actions(question, tools_help, pg_version="unknown", mode="readonly"):
-    """
-    Génère un plan JSON validé et sécurisé.
-    """
     registry = get_registry()
 
     prompt = build_planner_prompt(

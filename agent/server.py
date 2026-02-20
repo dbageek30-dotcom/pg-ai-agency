@@ -3,6 +3,7 @@ import json
 import os
 import logging
 import time
+import sys
 
 # Imports structure v1.2.1
 from executor import run_command
@@ -10,8 +11,13 @@ from security.allowlist import is_tool_allowed, extract_tool
 from security.safety import is_safe, get_unsafe_reason
 from runtime.audit import get_last_logs, log_execution, init_db
 from runtime.registry import refresh_registry, get_registry
-# --- NOUVEL IMPORT ---
-from runtime.toolbox import ToolboxManager 
+from runtime.toolbox import ToolboxManager
+
+# --- IMPORTS PLANNER & ORCHESTRATOR ---
+# On ajoute la racine du projet pour pouvoir importer planner.py
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from planner import plan_actions
+from orchestrator import run_plan
 
 # ------------------------------------------------------------
 # Configuration
@@ -75,7 +81,7 @@ def explore_tool(tool):
 
     # --- RÉCUPÉRATION DU CHEMIN VIA LE REGISTRY ---
     registry = get_registry()
-    tool_path = registry.get(tool) # Le registry stocke les chemins absolus
+    tool_path = registry.get(tool)  # Le registry stocke les chemins absolus
     
     if not tool_path:
         # Si pas dans le registry, on tente le nom brut au cas où
@@ -85,7 +91,7 @@ def explore_tool(tool):
     toolbox = ToolboxManager()
     
     logging.info(f"[EXPLORE] Path='{tool_path}' Sub='{subcommand}'")
-    result = toolbox.get_structured_help(tool_path, subcommand) # On passe le path
+    result = toolbox.get_structured_help(tool_path, subcommand)  # On passe le path
     
     return jsonify(result)
 
@@ -142,8 +148,49 @@ def get_audit():
     limit = request.args.get("limit", 20, type=int)
     return jsonify(get_last_logs(limit))
 
+@app.route("/plan_exec", methods=["POST"])
+def plan_and_exec():
+    if not check_auth(request):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    question = data.get("question")
+    mode = data.get("mode", "readonly")
+
+    if not question:
+        return jsonify({"error": "Missing 'question'"}), 400
+
+    # Tu pourras enrichir tools_help plus tard avec /explore
+    tools_help = {}
+    pg_version = "unknown"  # à améliorer plus tard via psql SELECT version();
+
+    try:
+        registry = get_registry()
+
+        # 1. Génération du plan (LLM + validation)
+        plan = plan_actions(
+            question=question,
+            tools_help=tools_help,
+            pg_version=pg_version,
+            mode=mode
+        )
+
+        # 2. Exécution sécurisée du plan
+        state = run_plan(plan, registry)
+
+        return jsonify({
+            "question": question,
+            "plan": plan,
+            "state": state
+        })
+
+    except Exception as e:
+        logging.exception("Plan/Exec failed")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     print("🔍 Initializing PgAgent v1.2.1...")
-    init_db()          
-    refresh_registry() 
+    init_db()
+    refresh_registry()
     app.run(host="0.0.0.0", port=PORT)
+
