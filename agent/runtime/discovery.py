@@ -132,8 +132,7 @@ class MockLLM(BaseLLMClient):
                     "on_error": "abort"
                 }
             ]
-        })
-
+        }, separators=(",", ":"))
 
 class OllamaClient(BaseLLMClient):
     def __init__(self, url: str, model: str):
