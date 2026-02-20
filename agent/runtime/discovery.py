@@ -2,9 +2,10 @@ import os
 import glob
 import json
 import re
+import subprocess
 from datetime import datetime
 
-# Dossiers de recherche ordonnés par pertinence (Distributions variées)
+# Dossiers de recherche ordonnés par pertinence
 SEARCH_PATHS = [
     "/usr/lib/postgresql/*/bin",   # Ubuntu/Debian
     "/usr/pgsql-*/bin",            # RHEL/CentOS
@@ -18,27 +19,53 @@ SEARCH_PATHS = [
 ]
 
 def get_version_from_path(path):
-    """Extrait le numéro de version d'un chemin (ex: '13' ou '9.2')."""
-    # Cherche un nombre après 'postgresql/' ou 'pgsql-' ou 'pgsql'
-    match = re.search(r'(?:postgresql/|pgsql-|pgsql)(\d+\.?\d*)', path)
+    """Extrait proprement le numéro de version d'un chemin PostgreSQL."""
+    # Capture le nombre juste après le nom du package (ex: /postgresql/16/bin)
+    match = re.search(r'(?:postgresql|pgsql)[/-]?(\d+\.?\d*)', path)
     return match.group(1) if match else None
 
+def discover_pg_extensions():
+    """Découvre les extensions actives via psql sans casser le flux."""
+    extensions = {}
+    try:
+        # On utilise -Atc pour un formatage minimal (parfait pour le parsing)
+        # On cible uniquement les extensions installées sur l'instance par défaut
+        query = "SELECT name, installed_version FROM pg_available_extensions WHERE installed_version IS NOT NULL;"
+        result = subprocess.run(
+            ["psql", "-Atc", query],
+            capture_output=True, 
+            text=True, 
+            timeout=5
+        )
+        
+        if result.returncode == 0:
+            for line in result.stdout.strip().split('\n'):
+                if '|' in line:
+                    name, version = line.split('|')
+                    extensions[name] = version
+    except Exception:
+        # En cas d'absence de psql ou de DB injoignable, on retourne un dict vide
+        pass
+    return extensions
+
 def discover_binaries():
-    """Scanne le système avec gestion intelligente des versions multiples."""
+    """Scanne le système et construit le registre des capacités."""
     registry = {
         "last_scan": datetime.now().isoformat(),
-        "binaries": {}
+        "binaries": {},
+        "capabilities": {
+            "extensions": {},
+            "os_info": os.uname().sysname if hasattr(os, 'uname') else "unknown"
+        }
     }
 
-    # Liste pour stocker les dossiers trouvés afin de les trier par version
     found_dirs = []
     for pattern in SEARCH_PATHS:
         for p in glob.glob(pattern):
             if os.path.isdir(p):
                 found_dirs.append(p)
 
-    # On trie les dossiers pour que les versions les plus hautes soient traitées en premier
-    # Ainsi, 'psql' pointera par défaut vers la version la plus récente
+    # Tri : les versions les plus hautes en premier
     found_dirs.sort(key=lambda x: (get_version_from_path(x) or "0"), reverse=True)
 
     for base_path in found_dirs:
@@ -49,13 +76,11 @@ def discover_binaries():
                 for entry in it:
                     try:
                         if entry.is_file() and os.access(entry.path, os.X_OK):
-                            # 1. Alias par défaut (ex: psql) 
-                            # Le premier trouvé (le plus récent dû au tri) gagne
+                            # 1. Alias principal (le premier trouvé/plus récent gagne)
                             if entry.name not in registry["binaries"]:
                                 registry["binaries"][entry.name] = entry.path
                             
-                            # 2. Alias versionné (ex: psql-13, pg_dump-9.2)
-                            # Permet à l'IA de forcer une version sur des serveurs legacy
+                            # 2. Alias versionné (ex: psql-16)
                             if version:
                                 versioned_name = f"{entry.name}-{version}"
                                 if versioned_name not in registry["binaries"]:
@@ -66,8 +91,12 @@ def discover_binaries():
         except PermissionError:
             continue 
 
+    # AJOUT : Si psql est trouvé, on enrichit les capacités SQL
+    if "psql" in registry["binaries"]:
+        registry["capabilities"]["extensions"] = discover_pg_extensions()
+
     return registry
 
 if __name__ == "__main__":
-    # Test local pour visualiser le registre généré
+    # Génération du JSON final
     print(json.dumps(discover_binaries(), indent=4))
