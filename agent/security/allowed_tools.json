@@ -11,7 +11,10 @@
     "pg_isready",
     "pg_dump",
     "pg_restore",
-    "systemctl"
+    "systemctl",
+    "ls",
+    "touch",
+    "ping"
   ]
 }
 

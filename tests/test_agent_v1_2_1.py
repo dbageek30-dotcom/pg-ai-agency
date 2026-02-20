@@ -4,7 +4,7 @@ import os
 import time
 
 # Configuration du test
-BASE_URL = "http://localhost:5050"
+BASE_URL = "http://10.214.0.10:5050"
 HEADERS = {"Authorization": "Bearer 123", "Content-Type": "application/json"}
 
 @pytest.fixture(scope="module", autouse=True)

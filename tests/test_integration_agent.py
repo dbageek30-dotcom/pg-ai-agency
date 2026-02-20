@@ -37,7 +37,7 @@ def test_chain_denied_tool():
     Vérifie que la sécurité bloque AVANT l'exécution.
     """
     # 'ls' n'est plus dans ta liste
-    command = "ls /tmp"
+    command = "nmap"
     result = run_command(command)
     
     assert result["exit_code"] == -1

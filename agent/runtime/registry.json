@@ -1,5 +1,5 @@
 {
-    "last_scan": "2026-02-19T13:37:42.729691",
+    "last_scan": "2026-02-20T14:49:57.614534",
     "binaries": {
         "oid2name": "/usr/lib/postgresql/18/bin/oid2name",
         "oid2name-18": "/usr/lib/postgresql/18/bin/oid2name",
@@ -1380,5 +1380,12 @@
         "capsh": "/usr/sbin/capsh",
         "cache_check": "/usr/sbin/cache_check",
         "cryptdisks_stop": "/usr/sbin/cryptdisks_stop"
+    },
+    "capabilities": {
+        "extensions": {
+            "plpgsql": "1.0",
+            "vector": "0.8.1"
+        },
+        "os_info": "Linux"
     }
 }
