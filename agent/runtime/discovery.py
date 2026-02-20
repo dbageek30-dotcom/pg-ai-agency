@@ -119,8 +119,7 @@ class BaseLLMClient:
 
 class MockLLM(BaseLLMClient):
     def chat(self, prompt: str, model: str | None = None) -> str:
-        return """
-        {
+        return json.dumps({
             "goal": "mock goal",
             "mode": "readonly",
             "max_steps": 1,
@@ -133,8 +132,7 @@ class MockLLM(BaseLLMClient):
                     "on_error": "abort"
                 }
             ]
-        }
-        """
+        })
 
 
 class OllamaClient(BaseLLMClient):
