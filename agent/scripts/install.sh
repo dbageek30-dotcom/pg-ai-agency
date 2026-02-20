@@ -8,9 +8,8 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 1. Détection des chemins (robuste quel que soit le dossier d'exécution)
+# 1. Détection des chemins
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-# On considère que le dossier 'agent/' est le parent du dossier 'scripts/'
 AGENT_SRC_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo "📂 Source détectée : $AGENT_SRC_DIR"
@@ -22,19 +21,19 @@ AGENT_PORT=${AGENT_PORT:-5050}
 
 read -p "Token d'authentification (obligatoire) : " AGENT_TOKEN
 if [ -z "$AGENT_TOKEN" ]; then
-    echo "❌ Erreur : Le token est obligatoire pour la sécurité."
+    echo "❌ Erreur : Le token est obligatoire."
     exit 1
 fi
 
 read -p "IP autorisée (Agency) : " ALLOWED_IP
 if [ -z "$ALLOWED_IP" ]; then
-    echo "❌ Erreur : L'IP de l'agence est requise pour le firewall."
+    echo "❌ Erreur : L'IP de l'agence est requise."
     exit 1
 fi
 
-# [1/6] Dépendances et Utilisateur
+# [1/6] Dépendances
 echo "📦 [1/6] Installation des paquets système..."
-apt update -q && apt install -y python3 python3-pip python3-venv ufw bubblewrap unzip
+apt update -q && apt install -y python3 python3-pip python3-venv ufw bubblewrap unzip jq
 
 if ! id "pgagent" &>/dev/null; then
     echo "👤 Création de l'utilisateur système pgagent..."
@@ -42,16 +41,14 @@ if ! id "pgagent" &>/dev/null; then
     usermod -aG postgres pgagent
 fi
 
-# [2/6] Structure des dossiers
+# [2/6] Structure
 echo "📂 [2/6] Préparation de /opt/pgagent..."
-# On nettoie l'ancien code s'il existe mais on garde runtime/ (données persistantes)
 mkdir -p /opt/pgagent/{bin,runtime,logs,config}
 rm -rf /opt/pgagent/bin/*
 
-# Copie du code source
 cp -r "$AGENT_SRC_DIR"/* /opt/pgagent/bin/
 
-# [3/6] Environnement Virtuel Python
+# [3/6] Virtualenv
 echo "🐍 [3/6] Configuration du Virtualenv..."
 python3 -m venv /opt/pgagent/venv
 /opt/pgagent/venv/bin/pip install --upgrade pip -q
@@ -59,33 +56,71 @@ if [ -f "/opt/pgagent/bin/requirements.txt" ]; then
     /opt/pgagent/venv/bin/pip install -r /opt/pgagent/bin/requirements.txt -q
 fi
 
-# [4/6] Initialisation Config et Registry
-echo "⚙️ [4/6] Initialisation des composants..."
-# Config via template
-if [ -f "/opt/pgagent/bin/config.json.template" ]; then
-    sed "s/__PORT__/$AGENT_PORT/g" /opt/pgagent/bin/config.json.template > /opt/pgagent/config/config.json
-fi
+# [4/6] Config + LLM
+echo "⚙️ [4/6] Initialisation de la configuration..."
 
-# Copie de la allowlist par défaut si absente
-if [ ! -f "/opt/pgagent/config/allowed_tools.json" ]; then
-    cp /opt/pgagent/bin/security/allowed_tools.json /opt/pgagent/config/ 2>/dev/null || true
-fi
+sed "s/__PORT__/$AGENT_PORT/g" /opt/pgagent/bin/config.json.template \
+  | sed "s/__TOKEN__/$AGENT_TOKEN/g" \
+  > /opt/pgagent/config/config.json
 
-# Scan des binaires (Registry)
-export PYTHONPATH=/opt/pgagent/bin
-/opt/pgagent/venv/bin/python3 /opt/pgagent/bin/runtime/discovery.py > /dev/null
+echo ""
+echo "=== Choix du LLM ==="
+echo "1) Ollama (local)"
+echo "2) OpenAI"
+echo "3) Azure OpenAI"
+echo "4) LM Studio"
+echo "5) Mock (tests)"
+read -p "Votre choix [1] : " LLM_CHOICE
+LLM_CHOICE=${LLM_CHOICE:-1}
 
-# [5/6] Permissions et Bubblewrap
-echo "🔐 [5/6] Sécurisation (SUID & Permissions)..."
-# Indispensable pour que pgagent puisse lancer bubblewrap
+case $LLM_CHOICE in
+  1)
+    echo "→ Configuration Ollama"
+    jq '.llm.provider="ollama" | .llm.model="llama3.1" | .llm.url="http://localhost:11434"' \
+      /opt/pgagent/config/config.json > /tmp/config.json
+    ;;
+  2)
+    echo "→ Configuration OpenAI"
+    read -p "Clé API OpenAI : " OPENAI_KEY
+    jq --arg key "$OPENAI_KEY" '.llm.provider="openai" | .llm.model="gpt-4o-mini" | .llm.api_key=$key' \
+      /opt/pgagent/config/config.json > /tmp/config.json
+    ;;
+  3)
+    echo "→ Configuration Azure OpenAI"
+    read -p "Endpoint Azure : " AZ_ENDPOINT
+    read -p "Deployment : " AZ_DEPLOY
+    read -p "Clé API Azure : " AZ_KEY
+    jq --arg ep "$AZ_ENDPOINT" --arg dep "$AZ_DEPLOY" --arg key "$AZ_KEY" \
+      '.llm.provider="azure" | .llm.endpoint=$ep | .llm.deployment=$dep | .llm.api_key=$key' \
+      /opt/pgagent/config/config.json > /tmp/config.json
+    ;;
+  4)
+    echo "→ Configuration LM Studio"
+    jq '.llm.provider="lmstudio" | .llm.url="http://localhost:1234" | .llm.model="llama3.1"' \
+      /opt/pgagent/config/config.json > /tmp/config.json
+    ;;
+  5)
+    echo "→ Mode Mock (tests)"
+    jq '.llm.provider="mock"' /opt/pgagent/config/config.json > /tmp/config.json
+    ;;
+  *)
+    echo "→ Choix invalide, Ollama par défaut"
+    jq '.llm.provider="ollama" | .llm.model="llama3.1" | .llm.url="http://localhost:11434"' \
+      /opt/pgagent/config/config.json > /tmp/config.json
+    ;;
+esac
+
+mv /tmp/config.json /opt/pgagent/config/config.json
+
+# [5/6] Permissions
+echo "🔐 [5/6] Permissions..."
 chmod u+s /usr/bin/bwrap
 
-# Permissions fichiers
 chown -R root:root /opt/pgagent/bin /opt/pgagent/venv
 chown -R pgagent:pgagent /opt/pgagent/runtime /opt/pgagent/logs /opt/pgagent/config
 chmod -R 770 /opt/pgagent/runtime /opt/pgagent/logs
 
-# [6/6] Service Systemd et Firewall
+# [6/6] Service + Firewall
 echo "🚀 [6/6] Activation du service..."
 cat /opt/pgagent/bin/pgagent.service.template \
   | sed "s/__TOKEN__/$AGENT_TOKEN/g" \
@@ -95,10 +130,10 @@ cat /opt/pgagent/bin/pgagent.service.template \
 systemctl daemon-reload
 systemctl enable pgagent --now
 
-# Firewall
 ufw allow from "$ALLOWED_IP" to any port "$AGENT_PORT" comment 'PG-AI-AGENT'
 
 echo "=============================================="
 echo " ✅ Installation v1.2.1 terminée avec succès !"
 echo "=============================================="
 systemctl status pgagent --no-pager
+

@@ -1,5 +1,5 @@
 import json
-from llm.client import OllamaClient
+from runtime.discovery import get_llm_client
 from security.allowlist import is_tool_allowed
 from security.safety import is_safe
 from runtime.registry import get_registry
@@ -7,26 +7,12 @@ from runtime.registry import get_registry
 MAX_STEPS_PER_PLAN = 5
 MAX_JSON_CHARS = 20000
 
-
-# ------------------------------------------------------------
-# LLM client (réutilise ton infra existante)
-# ------------------------------------------------------------
-_ai = OllamaClient()
-
+# Client LLM officiel
+_ai = get_llm_client()
 
 def call_llm(prompt: str, model: str | None = None) -> str:
-    """
-    Wrapper simple autour de ton client LLM.
-    Ici on utilise le modèle 'FAST_MODEL' que tu utilises déjà
-    dans agency_expert.py, ou un défaut.
-    """
-    # On laisse le client gérer le modèle par défaut si non fourni
     return _ai.chat(prompt, model=model)
 
-
-# ------------------------------------------------------------
-# Extraction robuste du JSON renvoyé par le LLM
-# ------------------------------------------------------------
 def extract_json(raw: str) -> str:
     if not raw:
         raise ValueError("Empty LLM response")
@@ -44,10 +30,6 @@ def extract_json(raw: str) -> str:
 
     return json_str
 
-
-# ------------------------------------------------------------
-# Prompt du planner
-# ------------------------------------------------------------
 def build_planner_prompt(question, registry, tools_help, pg_version, mode="readonly"):
     return f"""
 You are a PostgreSQL DBA assistant. You NEVER execute commands.
@@ -79,16 +61,12 @@ You MUST respond with a single JSON object with this schema:
 }}
 
 Rules:
-- NEVER include destructive commands (DROP, DELETE, TRUNCATE, rm, etc.).
+- NEVER include destructive commands.
 - Use only tools listed above.
 - Prefer read-only operations in mode=readonly.
 - If no action is needed, return max_steps=0 and steps=[].
 """
 
-
-# ------------------------------------------------------------
-# Validation stricte du plan
-# ------------------------------------------------------------
 def validate_plan(plan: dict, registry: dict) -> dict:
     if not isinstance(plan, dict):
         raise ValueError("Plan must be a JSON object")
@@ -136,10 +114,6 @@ def validate_plan(plan: dict, registry: dict) -> dict:
     plan["steps"] = safe_steps[:plan["max_steps"]]
     return plan
 
-
-# ------------------------------------------------------------
-# Fonction principale : génère un plan validé
-# ------------------------------------------------------------
 def plan_actions(question, tools_help, pg_version="unknown", mode="readonly"):
     registry = get_registry()
 
