@@ -4,11 +4,14 @@ import json
 import subprocess
 from datetime import datetime
 
-# Import dynamique du client LLM
+# Import dynamique des outils autorisés pour le croisement immédiat
 try:
-    from runtime.llm_client import MockLLM, OllamaClient
+    from security.allowlist import ALLOWED_TOOLS
 except ImportError:
-    from llm_client import MockLLM, OllamaClient
+    # Ajustement du path si nécessaire pour trouver security.allowlist
+    import sys
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from security.allowlist import ALLOWED_TOOLS
 
 CONFIG_PATH = "/opt/pgagent/config/config.json"
 REGISTRY_PATH = "/opt/pgagent/runtime/registry.json"
@@ -20,7 +23,8 @@ DBA_TOOLS_METADATA = {
     "psql": {"cmd": "--version", "desc": "PostgreSQL CLI"},
     "pg_verifybackup": {"cmd": "--version", "desc": "Backup validation tool"},
     "repmgr": {"cmd": "--version", "desc": "Replication manager"},
-    "pg_basebackup": {"cmd": "--version", "desc": "PostgreSQL base backup tool"}
+    "pg_basebackup": {"cmd": "--version", "desc": "PostgreSQL base backup tool"},
+    "ls": {"cmd": "--version", "desc": "List directory contents"}
 }
 
 def load_config():
@@ -40,7 +44,6 @@ def get_tool_metadata(name, path):
             cmd = DBA_TOOLS_METADATA[name]["cmd"]
             result = subprocess.run([path, cmd], capture_output=True, text=True, timeout=2)
             if result.returncode == 0:
-                # On nettoie la sortie pour n'avoir que la ligne de version
                 metadata["version"] = result.stdout.strip().split('\n')[0]
             metadata["description"] = DBA_TOOLS_METADATA[name]["desc"]
         except Exception:
@@ -49,9 +52,7 @@ def get_tool_metadata(name, path):
 
 def resolve_and_detect_conflicts(found_binaries):
     """
-    Applique tes règles :
-    1. Priorité aux chemins spécifiques (ex: /usr/lib/postgresql/...) sur /usr/bin.
-    2. Si plusieurs chemins spécifiques subsistent -> Conflit.
+    Applique les règles de priorité et détecte les ambiguïtés.
     """
     final_tools = {}
     conflicts = {}
@@ -60,24 +61,20 @@ def resolve_and_detect_conflicts(found_binaries):
         if len(paths) == 1:
             final_tools[name] = paths[0]
         else:
-            # Règle : on écarte /usr/bin/ et /bin/ si on a des chemins experts
+            # Priorité : on dégage /usr/bin et /bin s'il y a un chemin spécifique (Postgres lib)
             expert_paths = [p for p in paths if not p.startswith(('/usr/bin/', '/bin/'))]
-            
-            # On réévalue avec les chemins filtrés
             eval_paths = expert_paths if expert_paths else paths
             
             if len(eval_paths) > 1:
-                # Toujours plusieurs versions après filtrage -> Arbitrage requis
                 conflicts[name] = eval_paths
             else:
                 final_tools[name] = eval_paths[0]
                 
     return final_tools, conflicts
 
-def discover_binaries(allowed_tools=None):
+def discover_binaries(allowed_tools=ALLOWED_TOOLS):
     """
-    Scanne le système, filtre selon l'allowlist, gère les priorités 
-    de chemins et détecte les conflits.
+    Scanne avec croisement STRICT et IMMÉDIAT.
     """
     SEARCH_PATHS = [
         "/usr/lib/postgresql/*/bin",
@@ -87,71 +84,56 @@ def discover_binaries(allowed_tools=None):
         "/usr/local/bin"
     ]
     
-    found_binaries = {} # Temporaire : {"psql": ["/path1", "/path2"]}
-
+    found_binaries = {}
+    
+    # On itère sur les chemins de recherche
     for pattern in SEARCH_PATHS:
         for p in glob.glob(pattern):
-            if os.path.isdir(p):
-                with os.scandir(p) as it:
-                    for entry in it:
-                        if entry.is_file() and os.access(entry.path, os.X_OK):
-                            # Si allowed_tools est fourni, on filtre immédiatement
-                            if allowed_tools and entry.name not in allowed_tools:
-                                continue
-                            
-                            if entry.name not in found_binaries:
-                                found_binaries[entry.name] = []
-                            if entry.path not in found_binaries[entry.name]:
-                                found_binaries[entry.name].append(entry.path)
+            if not os.path.isdir(p):
+                continue
+            
+            # On ne liste pas tout le dossier si c'est un gros dossier comme /usr/bin
+            # On vérifie uniquement la présence des outils autorisés pour gagner du temps
+            for tool_name in allowed_tools:
+                full_path = os.path.join(p, tool_name)
+                if os.path.exists(full_path) and os.path.isfile(full_path):
+                    if os.access(full_path, os.X_OK):
+                        if tool_name not in found_binaries:
+                            found_binaries[tool_name] = []
+                        if full_path not in found_binaries[tool_name]:
+                            found_binaries[tool_name].append(full_path)
 
-    # Résolution des priorités et détection de conflits
+    # Résolution des doublons et conflits
     verified_paths, conflicts = resolve_and_detect_conflicts(found_binaries)
 
     registry = {
         "last_scan": datetime.now().isoformat(),
-        "tools": [], # Liste enrichie pour le LLM
-        "binaries": verified_paths, # Map simple pour l'exécuteur
+        "tools": [], # Boîte à outils enrichie pour le LLM
+        "binaries": verified_paths, # Pour l'exécuteur
         "has_conflicts": len(conflicts) > 0,
         "conflicts": conflicts,
         "capabilities": {"os_info": os.uname().sysname}
     }
 
-    # Enrichissement avec les métadonnées (version, desc) pour le LLM
+    # On n'ajoute que les outils résolus (sans conflit) à la boîte à outils du LLM
     for name, path in verified_paths.items():
         registry["tools"].append(get_tool_metadata(name, path))
         
     return registry
 
 def get_registry():
-    """Charge le registre depuis le fichier ou lance un scan si absent."""
     if not os.path.exists(REGISTRY_PATH):
-        # Pour le scan auto, on peut charger la liste depuis le module security
-        from security.allowlist import ALLOWED_TOOLS
         return discover_binaries(ALLOWED_TOOLS)
     with open(REGISTRY_PATH, "r") as f:
         return json.load(f)
 
-_cached_client = None
-
-def get_llm_client():
-    global _cached_client
-    if _cached_client:
-        return _cached_client
-
-    cfg = load_config().get("llm", {})
-    provider = cfg.get("provider", "mock")
-
-    if provider == "ollama":
-        _cached_client = OllamaClient(
-            url=cfg.get("url", "http://10.214.0.8:11434"),
-            model=cfg.get("model", "qwen2.5:7b-instruct-q4_K_M")
-        )
-    else:
-        _cached_client = MockLLM()
-    
-    return _cached_client
+def refresh_registry():
+    """Force un nouveau scan et sauvegarde le résultat."""
+    data = discover_binaries(ALLOWED_TOOLS)
+    os.makedirs(os.path.dirname(REGISTRY_PATH), exist_ok=True)
+    with open(REGISTRY_PATH, "w") as f:
+        json.dump(data, f, indent=2)
+    return data
 
 if __name__ == "__main__":
-    # Test direct du scan
-    from security.allowlist import ALLOWED_TOOLS
     print(json.dumps(discover_binaries(ALLOWED_TOOLS), indent=2))
