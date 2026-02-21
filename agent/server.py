@@ -73,6 +73,8 @@ def plan_and_exec():
 
     data = request.get_json() or {}
     question = data.get("question")
+    # NOUVEAU : On récupère le contexte RAG envoyé par la VM-Agency
+    rag_context = data.get("rag_context", "No official documentation provided.")
     mode = data.get("mode", "readonly")
 
     if not question:
@@ -82,33 +84,26 @@ def plan_and_exec():
         # 1. Récupération du registre (Discovery dynamique)
         registry = get_registry()
 
-        # 2. GESTION DES CONFLITS DE VERSION (Arbitrage utilisateur)
+        # 2. GESTION DES CONFLITS
         if registry.get("has_conflicts"):
-            logging.warning(f"[CONFLICT] Version ambiguity detected for: {list(registry['conflicts'].keys())}")
             return jsonify({
                 "error": "VERSION_CONFLICT",
-                "message": "Plusieurs versions spécifiques détectées pour un même outil.",
-                "details": registry.get("conflicts"),
-                "instruction": "Veuillez préciser la version ou le chemin complet dans votre question."
+                "details": registry.get("conflicts")
             }), 409
 
-        # 3. Préparation de la "Boîte à outils" enrichie pour le LLM
-        # On passe la liste des objets {name, version, description, path}
-        enriched_tools = registry.get("tools", [])
-        
-        # Note: pg_version peut être extrait dynamiquement du registry si besoin
-        pg_version = "unknown" 
+        # 3. Préparation des métadonnées
+        pg_version = "unknown" # On pourrait extraire 'postgres --version' du registry ici
 
-        # 4. Génération du plan via le Planner (qui reçoit la boîte à outils)
+        # 4. Génération du plan
+        # MODIFICATION : On passe rag_context au planner
         plan = plan_actions(
             question=question,
-            tools_help=enriched_tools, # L'IA a maintenant accès aux versions/descriptions
+            rag_context=rag_context, # Injecté depuis la VM-Agency
             pg_version=pg_version,
             mode=mode
         )
 
         # 5. Exécution sécurisée du plan
-        # On utilise registry["binaries"] qui contient les chemins résolus et uniques
         state = run_plan(plan, registry.get("binaries", {}))
 
         return jsonify({
