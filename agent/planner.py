@@ -22,7 +22,6 @@ def get_llm_client():
     return MockLLM()
 
 def call_llm(prompt: str, model: str | None = None) -> str:
-    # On instancie le client au besoin
     ai = get_llm_client()
     return ai.chat(prompt, model=model)
 
@@ -30,7 +29,6 @@ def extract_json(raw: str) -> str:
     if not raw:
         raise ValueError("Empty LLM response")
 
-    # Nettoyage des balises markdown
     cleaned = re.sub(r'```json\s*', '', raw)
     cleaned = re.sub(r'\s*```', '', cleaned)
 
@@ -47,35 +45,36 @@ def extract_json(raw: str) -> str:
     return json_str
 
 def build_planner_prompt(question, registry_binaries, tools_help, pg_version, mode="readonly"):
-    # On utilise les noms de binaires résolus pour le prompt
     tools_list = list(registry_binaries.keys())
     
-    return f"""You are a PostgreSQL DBA Assistant. You ONLY return JSON.
+    return f"""You are a PostgreSQL DBA Expert. Respond ONLY in JSON.
 User question: "{question}"
-PG Version: {pg_version}
-Mode: {mode}
+PG Version: {pg_version} | Mode: {mode}
 Available tools: {tools_list}
 
-TASK: Generate a plan to answer the question using the available tools.
-- Use 'psql' for queries.
-- If the question is about backups, use 'pg_verifybackup' or 'psql'.
+RULES:
+1. CONSULT: Review available tools. If NO tool can perform the task, return an empty steps list and explain in the "goal".
+2. UNCERTAINTY: If you are unsure of a tool's syntax, your first step MUST be to use 'tool --help'.
+3. ACCURACY: DO NOT misuse tools (e.g., do not use 'psql' to run bash commands like 'tail').
+4. JUSTIFY: For each step, provide a "justification" and a "risk_assessment".
 
 EXPECTED JSON SCHEMA:
 {{
-  "goal": "description",
+  "goal": "Explain what you will do OR why it's impossible with available tools",
   "mode": "{mode}",
   "max_steps": {MAX_STEPS_PER_PLAN},
   "steps": [
     {{
       "id": "step_1",
       "tool": "tool_name",
-      "args": ["arg1"],
-      "intent": "why",
+      "args": ["--help"],
+      "justification": "I need to verify the exact flags to avoid syntax errors.",
+      "risk_assessment": "low",
+      "intent": "Read manual",
       "on_error": "abort"
     }}
   ]
 }}
-Respond ONLY with JSON. Use tool names from the list above.
 """
 
 def validate_plan(plan: dict, registry_binaries: dict) -> dict:
@@ -112,7 +111,7 @@ def validate_plan(plan: dict, registry_binaries: dict) -> dict:
         if not is_tool_allowed(actual_tool_key) and not is_tool_allowed(clean_name):
             continue
 
-        # Vérification Sécurité via le chemin résolu
+        # Résolution du chemin pour Bubblewrap
         tool_path = registry_binaries[actual_tool_key]
         cmd = " ".join([str(tool_path)] + [str(a) for a in args])
 
@@ -127,7 +126,6 @@ def validate_plan(plan: dict, registry_binaries: dict) -> dict:
     return plan
 
 def plan_actions(question, tools_help, pg_version="unknown", mode="readonly"):
-    # Récupération sécurisée du registre
     registry_data = get_registry()
     registry_binaries = registry_data.get("binaries", {})
 
