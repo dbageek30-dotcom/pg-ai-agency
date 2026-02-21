@@ -1,206 +1,135 @@
 import os
 import glob
 import json
-import re
 import subprocess
 from datetime import datetime
-from pathlib import Path
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
+# Import dynamique du client LLM
+try:
+    from runtime.llm_client import MockLLM, OllamaClient
+except ImportError:
+    from llm_client import MockLLM, OllamaClient
 
 CONFIG_PATH = "/opt/pgagent/config/config.json"
 REGISTRY_PATH = "/opt/pgagent/runtime/registry.json"
 
+# Métadonnées pour enrichir la "boîte à outils" de l'IA
+DBA_TOOLS_METADATA = {
+    "pgbackrest": {"cmd": "--version", "desc": "Backup & Restore tool"},
+    "patronictl": {"cmd": "version", "desc": "High-Availability manager"},
+    "psql": {"cmd": "--version", "desc": "PostgreSQL CLI"},
+    "pg_verifybackup": {"cmd": "--version", "desc": "Backup validation tool"},
+    "repmgr": {"cmd": "--version", "desc": "Replication manager"},
+    "pg_basebackup": {"cmd": "--version", "desc": "PostgreSQL base backup tool"}
+}
+
 def load_config():
     if not os.path.exists(CONFIG_PATH):
         return {}
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
-
-
-# ============================================================
-# DISCOVERY : PostgreSQL binaries + extensions
-# ============================================================
-
-SEARCH_PATHS = [
-    "/usr/lib/postgresql/*/bin",
-    "/usr/pgsql-*/bin",
-    "/usr/pgsql*/bin",
-    "/opt/pgagent/bin",
-    "/opt/patroni/bin",
-    "/opt/pgbackrest/bin",
-    "/usr/local/bin",
-    "/usr/bin",
-    "/usr/sbin"
-]
-
-def get_version_from_path(path):
-    match = re.search(r'(?:postgresql|pgsql)[/-]?(\d+\.?\d*)', path)
-    return match.group(1) if match else None
-
-def discover_pg_extensions():
-    extensions = {}
     try:
-        query = "SELECT name, installed_version FROM pg_available_extensions WHERE installed_version IS NOT NULL;"
-        result = subprocess.run(
-            ["psql", "-Atc", query],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        if result.returncode == 0:
-            for line in result.stdout.strip().split('\n'):
-                if '|' in line:
-                    name, version = line.split('|')
-                    extensions[name] = version
+        with open(CONFIG_PATH, "r") as f:
+            return json.load(f)
     except Exception:
-        pass
-    return extensions
+        return {}
 
-def discover_binaries():
-    registry = {
-        "last_scan": datetime.now().isoformat(),
-        "binaries": {},
-        "capabilities": {
-            "extensions": {},
-            "os_info": os.uname().sysname if hasattr(os, 'uname') else "unknown"
-        }
-    }
+def get_tool_metadata(name, path):
+    """Interroge le binaire pour obtenir sa version réelle et sa description."""
+    metadata = {"name": name, "path": path, "version": "unknown", "description": ""}
+    if name in DBA_TOOLS_METADATA:
+        try:
+            cmd = DBA_TOOLS_METADATA[name]["cmd"]
+            result = subprocess.run([path, cmd], capture_output=True, text=True, timeout=2)
+            if result.returncode == 0:
+                # On nettoie la sortie pour n'avoir que la ligne de version
+                metadata["version"] = result.stdout.strip().split('\n')[0]
+            metadata["description"] = DBA_TOOLS_METADATA[name]["desc"]
+        except Exception:
+            pass
+    return metadata
 
-    found_dirs = []
+def resolve_and_detect_conflicts(found_binaries):
+    """
+    Applique tes règles :
+    1. Priorité aux chemins spécifiques (ex: /usr/lib/postgresql/...) sur /usr/bin.
+    2. Si plusieurs chemins spécifiques subsistent -> Conflit.
+    """
+    final_tools = {}
+    conflicts = {}
+
+    for name, paths in found_binaries.items():
+        if len(paths) == 1:
+            final_tools[name] = paths[0]
+        else:
+            # Règle : on écarte /usr/bin/ et /bin/ si on a des chemins experts
+            expert_paths = [p for p in paths if not p.startswith(('/usr/bin/', '/bin/'))]
+            
+            # On réévalue avec les chemins filtrés
+            eval_paths = expert_paths if expert_paths else paths
+            
+            if len(eval_paths) > 1:
+                # Toujours plusieurs versions après filtrage -> Arbitrage requis
+                conflicts[name] = eval_paths
+            else:
+                final_tools[name] = eval_paths[0]
+                
+    return final_tools, conflicts
+
+def discover_binaries(allowed_tools=None):
+    """
+    Scanne le système, filtre selon l'allowlist, gère les priorités 
+    de chemins et détecte les conflits.
+    """
+    SEARCH_PATHS = [
+        "/usr/lib/postgresql/*/bin",
+        "/usr/pgsql-*/bin",
+        "/opt/pgagent/bin",
+        "/usr/bin",
+        "/usr/local/bin"
+    ]
+    
+    found_binaries = {} # Temporaire : {"psql": ["/path1", "/path2"]}
+
     for pattern in SEARCH_PATHS:
         for p in glob.glob(pattern):
             if os.path.isdir(p):
-                found_dirs.append(p)
-
-    found_dirs.sort(key=lambda x: (get_version_from_path(x) or "0"), reverse=True)
-
-    for base_path in found_dirs:
-        version = get_version_from_path(base_path)
-        try:
-            with os.scandir(base_path) as it:
-                for entry in it:
-                    try:
+                with os.scandir(p) as it:
+                    for entry in it:
                         if entry.is_file() and os.access(entry.path, os.X_OK):
-                            if entry.name not in registry["binaries"]:
-                                registry["binaries"][entry.name] = entry.path
+                            # Si allowed_tools est fourni, on filtre immédiatement
+                            if allowed_tools and entry.name not in allowed_tools:
+                                continue
+                            
+                            if entry.name not in found_binaries:
+                                found_binaries[entry.name] = []
+                            if entry.path not in found_binaries[entry.name]:
+                                found_binaries[entry.name].append(entry.path)
 
-                            if version:
-                                versioned_name = f"{entry.name}-{version}"
-                                if versioned_name not in registry["binaries"]:
-                                    registry["binaries"][versioned_name] = entry.path
-                    except OSError:
-                        continue
-        except PermissionError:
-            continue
+    # Résolution des priorités et détection de conflits
+    verified_paths, conflicts = resolve_and_detect_conflicts(found_binaries)
 
-    if "psql" in registry["binaries"]:
-        registry["capabilities"]["extensions"] = discover_pg_extensions()
+    registry = {
+        "last_scan": datetime.now().isoformat(),
+        "tools": [], # Liste enrichie pour le LLM
+        "binaries": verified_paths, # Map simple pour l'exécuteur
+        "has_conflicts": len(conflicts) > 0,
+        "conflicts": conflicts,
+        "capabilities": {"os_info": os.uname().sysname}
+    }
 
+    # Enrichissement avec les métadonnées (version, desc) pour le LLM
+    for name, path in verified_paths.items():
+        registry["tools"].append(get_tool_metadata(name, path))
+        
     return registry
 
 def get_registry():
+    """Charge le registre depuis le fichier ou lance un scan si absent."""
     if not os.path.exists(REGISTRY_PATH):
-        return {}
+        # Pour le scan auto, on peut charger la liste depuis le module security
+        from security.allowlist import ALLOWED_TOOLS
+        return discover_binaries(ALLOWED_TOOLS)
     with open(REGISTRY_PATH, "r") as f:
         return json.load(f)
-
-
-# ============================================================
-# LLM CLIENTS
-# ============================================================
-
-class BaseLLMClient:
-    def chat(self, prompt: str, model: str | None = None) -> str:
-        raise NotImplementedError
-
-
-class MockLLM(BaseLLMClient):
-    def chat(self, prompt: str, model: str | None = None) -> str:
-        return json.dumps({
-            "goal": "mock goal",
-            "mode": "readonly",
-            "max_steps": 1,
-            "steps": [
-                {
-                    "id": "mock_step",
-                    "tool": "echo",
-                    "args": ["hello"],
-                    "intent": "mock",
-                    "on_error": "abort"
-                }
-            ]
-        }, separators=(",", ":"))
-
-class OllamaClient(BaseLLMClient):
-    def __init__(self, url: str, model: str):
-        self.url = url
-        self.model = model
-
-    def chat(self, prompt: str, model: str | None = None) -> str:
-        import requests
-        payload = {
-            "model": model or self.model,
-            "prompt": prompt
-        }
-        r = requests.post(f"{self.url}/api/generate", json=payload)
-        r.raise_for_status()
-        return r.text
-
-
-class OpenAIClient(BaseLLMClient):
-    def __init__(self, api_key: str, model: str):
-        from openai import OpenAI
-        self.client = OpenAI(api_key=api_key)
-        self.model = model
-
-    def chat(self, prompt: str, model: str | None = None) -> str:
-        response = self.client.chat.completions.create(
-            model=model or self.model,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
-
-
-class AzureOpenAIClient(BaseLLMClient):
-    def __init__(self, endpoint: str, deployment: str, api_key: str):
-        from openai import AzureOpenAI
-        self.client = AzureOpenAI(
-            api_key=api_key,
-            azure_endpoint=endpoint,
-            api_version="2024-02-01"
-        )
-        self.deployment = deployment
-
-    def chat(self, prompt: str, model: str | None = None) -> str:
-        response = self.client.chat.completions.create(
-            model=self.deployment,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
-
-
-class LMStudioClient(BaseLLMClient):
-    def __init__(self, url: str, model: str):
-        self.url = url
-        self.model = model
-
-    def chat(self, prompt: str, model: str | None = None) -> str:
-        import requests
-        payload = {
-            "model": model or self.model,
-            "messages": [{"role": "user", "content": prompt}]
-        }
-        r = requests.post(f"{self.url}/v1/chat/completions", json=payload)
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"]
-
-
-# ============================================================
-# FACTORY : get_llm_client()
-# ============================================================
 
 _cached_client = None
 
@@ -212,44 +141,17 @@ def get_llm_client():
     cfg = load_config().get("llm", {})
     provider = cfg.get("provider", "mock")
 
-    if provider == "mock":
-        _cached_client = MockLLM()
-
-    elif provider == "ollama":
+    if provider == "ollama":
         _cached_client = OllamaClient(
-            url=cfg.get("url", "http://localhost:11434"),
-            model=cfg.get("model", "llama3.1")
+            url=cfg.get("url", "http://10.214.0.8:11434"),
+            model=cfg.get("model", "qwen2.5:7b-instruct-q4_K_M")
         )
-
-    elif provider == "openai":
-        _cached_client = OpenAIClient(
-            api_key=cfg.get("api_key", ""),
-            model=cfg.get("model", "gpt-4o-mini")
-        )
-
-    elif provider == "azure":
-        _cached_client = AzureOpenAIClient(
-            endpoint=cfg.get("endpoint", ""),
-            deployment=cfg.get("deployment", ""),
-            api_key=cfg.get("api_key", "")
-        )
-
-    elif provider == "lmstudio":
-        _cached_client = LMStudioClient(
-            url=cfg.get("url", "http://localhost:1234"),
-            model=cfg.get("model", "llama3.1")
-        )
-
     else:
-        raise ValueError(f"Unknown LLM provider: {provider}")
-
+        _cached_client = MockLLM()
+    
     return _cached_client
 
-
-# ============================================================
-# MAIN (scan only)
-# ============================================================
-
 if __name__ == "__main__":
-    print(json.dumps(discover_binaries(), indent=4))
-
+    # Test direct du scan
+    from security.allowlist import ALLOWED_TOOLS
+    print(json.dumps(discover_binaries(ALLOWED_TOOLS), indent=2))

@@ -29,6 +29,8 @@ def extract_tool(command: str) -> str:
     return command.strip().split()[0]
 
 def is_tool_allowed(command: str) -> bool:
-    """Vérifie si l'outil principal de la commande est dans la allowlist."""
     tool = extract_tool(command)
-    return tool in ALLOWED_TOOLS
+    allowed = tool in ALLOWED_TOOLS
+    # Ce print apparaîtra dans les logs de ton service (journalctl -u pgagent)
+    print(f"DEBUG ALLOWLIST: tool='{tool}', allowed={allowed}, list={ALLOWED_TOOLS}")
+    return allowed
