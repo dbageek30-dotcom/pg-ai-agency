@@ -45,33 +45,34 @@ def extract_json(raw: str) -> str:
     return json_str
 
 def build_planner_prompt(question, registry_binaries, tools_help, pg_version, mode="readonly"):
-    tools_list = list(registry_binaries.keys())
-    
-    return f"""You are a PostgreSQL DBA Expert. Respond ONLY in JSON.
-User question: "{question}"
-PG Version: {pg_version} | Mode: {mode}
-Available tools: {tools_list}
+    # On construit la documentation à partir de tools_help (dict: tool_name -> help_text)
+    docs_context = ""
+    if isinstance(tools_help, dict):
+        for tool_name, help_text in tools_help.items():
+            docs_context += f"--- TOOL: {tool_name} ---\n{help_text[:1000]}\n\n"
+    else:
+        docs_context = "No detailed documentation available. Use tool names only."
 
-RULES:
-1. CONSULT: Review available tools. If NO tool can perform the task, return an empty steps list and explain in the "goal".
-2. UNCERTAINTY: If you are unsure of a tool's syntax, your first step MUST be to use 'tool --help'.
-3. ACCURACY: DO NOT misuse tools (e.g., do not use 'psql' to run bash commands like 'tail').
-4. JUSTIFY: For each step, provide a "justification" and a "risk_assessment".
+    return f"""You are a PostgreSQL DBA Expert. Respond ONLY in JSON.
+Question: "{question}"
+Available tools: {list(registry_binaries.keys())}
+PG Version: {pg_version} | Mode: {mode}
+
+DOCUMENTATION (The only actions allowed are those described here):
+{docs_context}
+
+STRICT RULES:
+1. READ THE DOCS: Only use a tool if its documentation explicitly confirms it can do the task.
+2. MISSING TOOL: If no tool covers the request (e.g. "check disk space" requires 'df'), return "steps": [] and set the goal to "MISSING_TOOL: I need [tool_name] because [reason]".
+3. NO GUESSING: Never use 'ls' or 'psql' for tasks they are not designed for.
+4. JUSTIFY: Provide a justification for each step based on the manual.
 
 EXPECTED JSON SCHEMA:
 {{
-  "goal": "Explain what you will do OR why it's impossible with available tools",
-  "mode": "{mode}",
-  "max_steps": {MAX_STEPS_PER_PLAN},
+  "goal": "Description or MISSING_TOOL request",
   "steps": [
     {{
-      "id": "step_1",
-      "tool": "tool_name",
-      "args": ["--help"],
-      "justification": "I need to verify the exact flags to avoid syntax errors.",
-      "risk_assessment": "low",
-      "intent": "Read manual",
-      "on_error": "abort"
+      "tool": "...", "args": ["..."], "justification": "...", "intent": "..."
     }}
   ]
 }}
@@ -111,7 +112,6 @@ def validate_plan(plan: dict, registry_binaries: dict) -> dict:
         if not is_tool_allowed(actual_tool_key) and not is_tool_allowed(clean_name):
             continue
 
-        # Résolution du chemin pour Bubblewrap
         tool_path = registry_binaries[actual_tool_key]
         cmd = " ".join([str(tool_path)] + [str(a) for a in args])
 
@@ -125,20 +125,29 @@ def validate_plan(plan: dict, registry_binaries: dict) -> dict:
     plan["steps"] = safe_steps[:plan["max_steps"]]
     return plan
 
-def plan_actions(question, tools_help, pg_version="unknown", mode="readonly"):
+def plan_actions(question, tools_help=None, pg_version="unknown", mode="readonly"):
+    # On récupère le registry complet du discovery
     registry_data = get_registry()
     registry_binaries = registry_data.get("binaries", {})
+    
+    # Si tools_help n'est pas fourni ou est une liste, on le reconstruit depuis le discovery
+    # pour avoir le dictionnaire {nom: help_doc}
+    rich_help = {}
+    for tool_entry in registry_data.get("tools", []):
+        rich_help[tool_entry['name']] = tool_entry.get('help_doc', 'No help available')
 
     prompt = build_planner_prompt(
         question=question,
         registry_binaries=registry_binaries,
-        tools_help=tools_help,
+        tools_help=rich_help,
         pg_version=pg_version,
         mode=mode
     )
 
-    raw_llm_output = call_llm(prompt)
-    json_str = extract_json(raw_llm_output)
-    plan = json.loads(json_str)
-
-    return validate_plan(plan, registry_binaries)
+    try:
+        raw_llm_output = call_llm(prompt)
+        json_str = extract_json(raw_llm_output)
+        plan = json.loads(json_str)
+        return validate_plan(plan, registry_binaries)
+    except Exception as e:
+        return {"goal": f"Error: {str(e)}", "steps": []}
