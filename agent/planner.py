@@ -4,8 +4,6 @@ import logging
 import os
 import sys
 
-# Import de ton moteur RAG Expert
-from agency_expert import DBAgencyExpert
 from runtime.llm_client import MockLLM, OllamaClient
 from runtime.discovery import load_config, get_registry
 from security.allowlist import is_tool_allowed
@@ -13,9 +11,6 @@ from security.safety import is_safe
 
 MAX_STEPS_PER_PLAN = 5
 MAX_JSON_CHARS = 20000
-
-# Initialisation de l'expert RAG (une seule fois pour charger le reranker CPU)
-expert_rag = DBAgencyExpert()
 
 def get_llm_client():
     cfg = load_config().get("llm", {})
@@ -27,83 +22,65 @@ def get_llm_client():
         )
     return MockLLM()
 
-def call_llm(prompt: str, model: str | None = None) -> str:
+def call_llm(prompt: str) -> str:
     ai = get_llm_client()
-    return ai.chat(prompt, model=model)
+    return ai.chat(prompt)
 
 def extract_json(raw: str) -> str:
-    if not raw: raise ValueError("Empty LLM response")
+    if not raw: raise ValueError("Empty response")
     cleaned = re.sub(r'```json\s*|\s*```', '', raw)
     start = cleaned.find("{")
     end = cleaned.rfind("}")
     if start == -1 or end == -1: raise ValueError("No JSON found")
-    return cleaned[start:end + 1]
+    return cleaned[start:end+1]
 
 def build_planner_prompt(question, registry_binaries, tools_help, rag_context, pg_version, mode):
-    # Fusion du manuel local (Discovery) et de la doc officielle (RAG)
     docs_context = ""
-    for tool_name, help_text in tools_help.items():
-        docs_context += f"--- LOCAL TOOL: {tool_name} ---\n{help_text[:800]}\n\n"
+    for name, help_text in tools_help.items():
+        docs_context += f"--- LOCAL TOOL: {name} ---\n{help_text[:800]}\n\n"
 
-    return f"""You are the PostgreSQL Expert Worker. A DBAManager has assigned you this task.
+    return f"""You are a PostgreSQL Expert Worker.
 Respond ONLY in JSON.
-
-QUESTION: "{question}"
 PG_VERSION: {pg_version} | MODE: {mode}
 
-OFFICIAL DOCUMENTATION (RAG):
+QUESTION: "{question}"
+
+OFFICIAL DOCUMENTATION (From Agency RAG):
 {rag_context}
 
-LOCAL TOOLS CAPABILITIES (DISCOVERY):
+LOCAL BINARIES (Discovery):
 {docs_context}
 
-STRICT WORKER RULES:
-1. DOCUMENTATION FIRST: Check if the OFFICIAL DOCUMENTATION describes a procedure for this task.
-2. TOOL MATCH: Only use a tool if the procedure in the RAG matches the LOCAL TOOL manual.
-3. ABORT ON SYSTEM TASKS: If the RAG or tools do not cover the task (e.g. "disk space"), return "steps": [] and "goal": "MISSING_TOOL: [name]".
-4. NO SUBSTITUTION: Never use 'ls' to approximate 'df'. Never use SQL to guess OS metrics.
+STRICT RULES:
+1. If the OFFICIAL DOCUMENTATION describes a tool you don't have in LOCAL BINARIES, return "goal": "MISSING_TOOL: [name]" and empty steps [].
+2. NEVER use 'ls' for system tasks. If 'df' is missing, report it.
 """
 
 def validate_plan(plan: dict, registry_binaries: dict) -> dict:
-    # (Logique de validation identique pour garantir la sécurité bwrap)
     if "steps" not in plan: plan["steps"] = []
     safe_steps = []
     for step in plan["steps"]:
         tool = step.get("tool", "").split('/')[-1]
         if tool in registry_binaries and is_tool_allowed(tool):
-            tool_path = registry_binaries[tool]
-            cmd = " ".join([str(tool_path)] + [str(a) for a in step.get("args", [])])
+            path = registry_binaries[tool]
+            cmd = " ".join([str(path)] + [str(a) for a in step.get("args", [])])
             if is_safe(cmd):
                 step["tool"] = tool
                 safe_steps.append(step)
     plan["steps"] = safe_steps[:MAX_STEPS_PER_PLAN]
     return plan
 
-def plan_actions(question, tools_help=None, pg_version="unknown", mode="readonly"):
-    # 1. RÉCUPÉRATION DU CONTEXTE OFFICIEL (RAG + Reranker)
-    # On utilise ton expert pour obtenir la "vérité" documentaire
-    print(f"🛠️  Consultation du RAG pour l'Expert PostgreSQL...")
-    rag_context = expert_rag.ask(question)
-
-    # 2. RÉCUPÉRATION DE L'INVENTAIRE LOCAL
+def plan_actions(question, rag_context="No context provided", pg_version="unknown", mode="readonly"):
+    # Plus besoin d'expert_rag ici ! On utilise le rag_context reçu par l'API
     registry_data = get_registry()
     registry_binaries = registry_data.get("binaries", {})
-    
     rich_help = {t['name']: t.get('help_doc', 'No help') for t in registry_data.get("tools", [])}
 
-    # 3. GÉNÉRATION DU PLAN
-    prompt = build_planner_prompt(
-        question=question,
-        registry_binaries=registry_binaries,
-        tools_help=rich_help,
-        rag_context=rag_context,
-        pg_version=pg_version,
-        mode=mode
-    )
+    prompt = build_planner_prompt(question, registry_binaries, rich_help, rag_context, pg_version, mode)
 
     try:
-        raw_llm_output = call_llm(prompt)
-        plan = json.loads(extract_json(raw_llm_output))
+        raw = call_llm(prompt)
+        plan = json.loads(extract_json(raw))
         return validate_plan(plan, registry_binaries)
     except Exception as e:
         return {"goal": f"Error: {str(e)}", "steps": []}
