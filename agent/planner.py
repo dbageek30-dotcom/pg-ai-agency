@@ -1,133 +1,146 @@
 import json
-from runtime.discovery import get_llm_client
+import re
+import logging
+from runtime.llm_client import MockLLM, OllamaClient
+from runtime.discovery import load_config, get_registry
 from security.allowlist import is_tool_allowed
 from security.safety import is_safe
-from runtime.registry import get_registry
 
 MAX_STEPS_PER_PLAN = 5
 MAX_JSON_CHARS = 20000
 
-# Client LLM officiel
-_ai = get_llm_client()
+def get_llm_client():
+    """Fabrique locale pour éviter les imports circulaires avec discovery."""
+    cfg = load_config().get("llm", {})
+    provider = cfg.get("provider", "mock")
+
+    if provider == "ollama":
+        return OllamaClient(
+            url=cfg.get("url", "http://10.214.0.8:11434"),
+            model=cfg.get("model", "qwen2.5:7b-instruct-q4_K_M")
+        )
+    return MockLLM()
 
 def call_llm(prompt: str, model: str | None = None) -> str:
-    return _ai.chat(prompt, model=model)
+    # On instancie le client au besoin
+    ai = get_llm_client()
+    return ai.chat(prompt, model=model)
 
 def extract_json(raw: str) -> str:
     if not raw:
         raise ValueError("Empty LLM response")
 
-    start = raw.find("{")
-    end = raw.rfind("}")
+    # Nettoyage des balises markdown
+    cleaned = re.sub(r'```json\s*', '', raw)
+    cleaned = re.sub(r'\s*```', '', cleaned)
+
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
 
     if start == -1 or end == -1 or end <= start:
-        raise ValueError("No JSON object found in LLM response")
+        raise ValueError(f"No JSON object found. Raw: {raw[:100]}")
 
-    json_str = raw[start:end + 1]
-
+    json_str = cleaned[start:end + 1]
     if len(json_str) > MAX_JSON_CHARS:
         raise ValueError("JSON too large")
 
     return json_str
 
-def build_planner_prompt(question, registry, tools_help, pg_version, mode="readonly"):
-    return f"""
-You are a PostgreSQL DBA assistant. You NEVER execute commands.
-You ONLY return a JSON plan that will be validated and executed by a secure agent.
+def build_planner_prompt(question, registry_binaries, tools_help, pg_version, mode="readonly"):
+    # On utilise les noms de binaires résolus pour le prompt
+    tools_list = list(registry_binaries.keys())
+    
+    return f"""You are a PostgreSQL DBA Assistant. You ONLY return JSON.
+User question: "{question}"
+PG Version: {pg_version}
+Mode: {mode}
+Available tools: {tools_list}
 
-User question:
-{question}
+TASK: Generate a plan to answer the question using the available tools.
+- Use 'psql' for queries.
+- If the question is about backups, use 'pg_verifybackup' or 'psql'.
 
-PostgreSQL version: {pg_version}
-Execution mode: {mode}
-
-Available tools:
-{json.dumps(tools_help, indent=2)}
-
-You MUST respond with a single JSON object with this schema:
+EXPECTED JSON SCHEMA:
 {{
-  "goal": "short description",
-  "mode": "readonly | maintenance | change",
-  "max_steps": integer <= {MAX_STEPS_PER_PLAN},
+  "goal": "description",
+  "mode": "{mode}",
+  "max_steps": {MAX_STEPS_PER_PLAN},
   "steps": [
     {{
-      "id": "short_id",
+      "id": "step_1",
       "tool": "tool_name",
-      "args": ["arg1", "arg2"],
-      "intent": "what this step does",
-      "on_error": "abort" or "continue"
+      "args": ["arg1"],
+      "intent": "why",
+      "on_error": "abort"
     }}
   ]
 }}
-
-Rules:
-- NEVER include destructive commands.
-- Use only tools listed above.
-- Prefer read-only operations in mode=readonly.
-- If no action is needed, return max_steps=0 and steps=[].
+Respond ONLY with JSON. Use tool names from the list above.
 """
 
-def validate_plan(plan: dict, registry: dict) -> dict:
+def validate_plan(plan: dict, registry_binaries: dict) -> dict:
     if not isinstance(plan, dict):
         raise ValueError("Plan must be a JSON object")
 
-    if "steps" not in plan or "max_steps" not in plan:
-        raise ValueError("Invalid plan: missing keys")
-
-    if not isinstance(plan["steps"], list):
-        raise ValueError("Invalid plan: steps must be a list")
-
-    plan["max_steps"] = min(plan.get("max_steps", 0), MAX_STEPS_PER_PLAN)
-
-    mode = plan.get("mode", "readonly")
-    if mode not in ["readonly", "maintenance", "change"]:
-        mode = "readonly"
-    plan["mode"] = mode
-
+    if "steps" not in plan:
+        plan["steps"] = []
+    
+    plan["max_steps"] = min(plan.get("max_steps", 0) or 5, MAX_STEPS_PER_PLAN)
     safe_steps = []
 
     for step in plan["steps"]:
-        tool = step.get("tool")
+        tool = step.get("tool", "")
         args = step.get("args", [])
 
         if not tool or not isinstance(args, list):
             continue
 
-        if not is_tool_allowed(tool):
+        clean_name = tool.split('/')[-1]
+        actual_tool_key = None
+
+        if clean_name in registry_binaries:
+            actual_tool_key = clean_name
+        else:
+            for k in registry_binaries.keys():
+                if k.startswith(clean_name):
+                    actual_tool_key = k
+                    break
+
+        if not actual_tool_key:
             continue
 
-        tool_path = registry.get(tool, tool)
-        cmd = " ".join([tool_path] + args)
-
-        if mode == "readonly" and not is_safe(cmd, readonly_strict=True):
+        if not is_tool_allowed(actual_tool_key) and not is_tool_allowed(clean_name):
             continue
+
+        # Vérification Sécurité via le chemin résolu
+        tool_path = registry_binaries[actual_tool_key]
+        cmd = " ".join([str(tool_path)] + [str(a) for a in args])
 
         if not is_safe(cmd):
             continue
 
+        step["tool"] = actual_tool_key
         step["on_error"] = step.get("on_error", "abort")
-        if step["on_error"] not in ["abort", "continue"]:
-            step["on_error"] = "abort"
-
         safe_steps.append(step)
 
     plan["steps"] = safe_steps[:plan["max_steps"]]
     return plan
 
 def plan_actions(question, tools_help, pg_version="unknown", mode="readonly"):
-    registry = get_registry()
+    # Récupération sécurisée du registre
+    registry_data = get_registry()
+    registry_binaries = registry_data.get("binaries", {})
 
     prompt = build_planner_prompt(
         question=question,
-        registry=registry,
+        registry_binaries=registry_binaries,
         tools_help=tools_help,
         pg_version=pg_version,
         mode=mode
     )
 
-    raw = call_llm(prompt)
-    json_str = extract_json(raw)
+    raw_llm_output = call_llm(prompt)
+    json_str = extract_json(raw_llm_output)
     plan = json.loads(json_str)
 
-    return validate_plan(plan, registry)
-
+    return validate_plan(plan, registry_binaries)
