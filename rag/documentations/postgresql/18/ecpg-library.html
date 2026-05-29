@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 34.11. Library Functions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/ecpg-library.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="34.11. Library Functions" />
+  <meta property="og:description" content="34.11.&amp;nbsp;Library Functions # The libecpg library primarily contains “hidden” functions that are used to implement the functionality expressed by the …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/ecpg-library.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/ecpg-library.html" title="PostgreSQL 18 - 34.11. Library Functions" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/ecpg-library.html" title="PostgreSQL 18 - 34.11. Library Functions" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/ecpg-library.html" title="PostgreSQL 17 - 34.11. Library Functions" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/ecpg-library.html" title="PostgreSQL 16 - 34.11. Library Functions" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/ecpg-library.html" title="PostgreSQL 15 - 34.11. Library Functions" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/ecpg-library.html" title="PostgreSQL 14 - 34.11. Library Functions" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/ecpg-library.html" title="PostgreSQL devel - 34.11. Library Functions"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/ecpg-library.html" title="PostgreSQL 13 - 34.11. Library Functions"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/ecpg-library.html" title="PostgreSQL 12 - 34.11. Library Functions"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/ecpg-library.html" title="PostgreSQL 11 - 34.11. Library Functions"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/ecpg-library.html" title="PostgreSQL 10 - 34.11. Library Functions"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/ecpg-library.html" title="PostgreSQL 9.6 - 34.11. Library Functions"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/ecpg-library.html" title="PostgreSQL 9.5 - 34.11. Library Functions"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/ecpg-library.html" title="PostgreSQL 9.4 - 34.11. Library Functions"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/ecpg-library.html" title="PostgreSQL 9.3 - 34.11. Library Functions"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/ecpg-library.html" title="PostgreSQL 9.2 - 34.11. Library Functions"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/ecpg-library.html" title="PostgreSQL 9.1 - 34.11. Library Functions"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/ecpg-library.html" title="PostgreSQL 9.0 - 34.11. Library Functions"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/ecpg-library.html" title="PostgreSQL 8.4 - 34.11. Library Functions"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/ecpg-library.html" title="PostgreSQL 8.3 - 34.11. Library Functions"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/ecpg-library.html" title="PostgreSQL 8.2 - 34.11. Library Functions"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/ecpg-library.html" title="PostgreSQL 8.1 - 34.11. Library Functions"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/ecpg-library.html" title="PostgreSQL 8.0 - 34.11. Library Functions"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/ecpg-library.html" title="PostgreSQL 7.4 - 34.11. Library Functions"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/ecpg-library.html" title="PostgreSQL 7.3 - 34.11. Library Functions"  rel="nofollow">7.3</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">34.11.&nbsp;Library Functions</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="ecpg-process.html" title="34.10.&nbsp;Processing Embedded SQL Programs">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter&nbsp;34.&nbsp;ECPG — Embedded SQL in C">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;34.&nbsp;<span class="application">ECPG</span> — Embedded <acronym class="acronym">SQL</acronym> in C</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="ecpg-lo.html" title="34.12.&nbsp;Large Objects">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="ECPG-LIBRARY">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">34.11.&nbsp;Library Functions <a href="#ECPG-LIBRARY" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <p>The <code class="filename">libecpg</code> library primarily contains <span class="quote">“<span class="quote">hidden</span>”</span> functions that are used to implement the functionality expressed by the embedded SQL commands. But there are some functions that can usefully be called directly. Note that this makes your code unportable.</p>
+  <div class="itemizedlist">
+    <ul class="itemizedlist" style="list-style-type: disc;">
+      <li class="listitem">
+        <p><code class="function">ECPGdebug(int <em class="replaceable"><code>on</code></em>, FILE *<em class="replaceable"><code>stream</code></em>)</code> turns on debug logging if called with the first argument non-zero. Debug logging is done on <em class="replaceable"><code>stream</code></em>. The log contains all <acronym class="acronym">SQL</acronym> statements with all the input variables inserted, and the results from the <span class="productname">PostgreSQL</span> server. This can be very useful when searching for errors in your <acronym class="acronym">SQL</acronym> statements.</p>
+        <div class="note">
+          <h3 class="title">Note</h3>
+          <p>On Windows, if the <span class="application">ecpg</span> libraries and an application are compiled with different flags, this function call will crash the application because the internal representation of the <code class="literal">FILE</code> pointers differ. Specifically, multithreaded/single-threaded, release/debug, and static/dynamic flags should be the same for the library and all applications using that library.</p>
+        </div>
+      </li>
+      <li class="listitem">
+        <p><code class="function">ECPGget_PGconn(const char *<em class="replaceable"><code>connection_name</code></em>)</code> returns the library database connection handle identified by the given name. If <em class="replaceable"><code>connection_name</code></em> is set to <code class="literal">NULL</code>, the current connection handle is returned. If no connection handle can be identified, the function returns <code class="literal">NULL</code>. The returned connection handle can be used to call any other functions from <span class="application">libpq</span>, if necessary.</p>
+        <div class="note">
+          <h3 class="title">Note</h3>
+          <p>It is a bad idea to manipulate database connection handles made from <span class="application">ecpg</span> directly with <span class="application">libpq</span> routines.</p>
+        </div>
+      </li>
+      <li class="listitem">
+        <p><code class="function">ECPGtransactionStatus(const char *<em class="replaceable"><code>connection_name</code></em>)</code> returns the current transaction status of the given connection identified by <em class="replaceable"><code>connection_name</code></em>. See <a class="xref" href="libpq-status.html" title="32.2.&nbsp;Connection Status Functions">Section&nbsp;32.2</a> and libpq's <a class="xref" href="libpq-status.html#LIBPQ-PQTRANSACTIONSTATUS"><code class="function">PQtransactionStatus</code></a> for details about the returned status codes.</p>
+      </li>
+      <li class="listitem">
+        <p><code class="function">ECPGstatus(int <em class="replaceable"><code>lineno</code></em>, const char* <em class="replaceable"><code>connection_name</code></em>)</code> returns true if you are connected to a database and false if not. <em class="replaceable"><code>connection_name</code></em> can be <code class="literal">NULL</code> if a single connection is being used.</p>
+      </li>
+    </ul>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="ecpg-process.html" title="34.10.&nbsp;Processing Embedded SQL Programs">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter&nbsp;34.&nbsp;ECPG — Embedded SQL in C">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="ecpg-lo.html" title="34.12.&nbsp;Large Objects">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">34.10.&nbsp;Processing Embedded SQL Programs&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;34.12.&nbsp;Large Objects</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/ecpg-library.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

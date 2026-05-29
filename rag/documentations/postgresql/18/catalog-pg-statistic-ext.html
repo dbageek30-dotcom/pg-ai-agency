@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 52.52. pg_statistic_ext</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/catalog-pg-statistic-ext.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="52.52. pg_statistic_ext" />
+  <meta property="og:description" content="52.52.&amp;nbsp;pg_statistic_ext # The catalog pg_statistic_ext holds definitions of extended planner statistics. Each row in this catalog corresponds to a statistics …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/catalog-pg-statistic-ext.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/catalog-pg-statistic-ext.html" title="PostgreSQL 18 - 52.52. pg_statistic_ext" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/catalog-pg-statistic-ext.html" title="PostgreSQL 18 - 52.52. pg_statistic_ext" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/catalog-pg-statistic-ext.html" title="PostgreSQL 17 - 52.52. pg_statistic_ext" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/catalog-pg-statistic-ext.html" title="PostgreSQL 16 - 52.52. pg_statistic_ext" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/catalog-pg-statistic-ext.html" title="PostgreSQL 15 - 52.52. pg_statistic_ext" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/catalog-pg-statistic-ext.html" title="PostgreSQL 14 - 52.52. pg_statistic_ext" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/catalog-pg-statistic-ext.html" title="PostgreSQL devel - 52.52. pg_statistic_ext"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/catalog-pg-statistic-ext.html" title="PostgreSQL 13 - 52.52. pg_statistic_ext"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/catalog-pg-statistic-ext.html" title="PostgreSQL 12 - 52.52. pg_statistic_ext"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/catalog-pg-statistic-ext.html" title="PostgreSQL 11 - 52.52. pg_statistic_ext"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/catalog-pg-statistic-ext.html" title="PostgreSQL 10 - 52.52. pg_statistic_ext"  rel="nofollow">10</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">52.52.&nbsp;<code class="structname">pg_statistic_ext</code></th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="catalog-pg-statistic.html" title="52.51.&nbsp;pg_statistic">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter&nbsp;52.&nbsp;System Catalogs">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;52.&nbsp;System Catalogs</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="catalog-pg-statistic-ext-data.html" title="52.53.&nbsp;pg_statistic_ext_data">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="CATALOG-PG-STATISTIC-EXT">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">52.52.&nbsp;<code class="structname">pg_statistic_ext</code> <a href="#CATALOG-PG-STATISTIC-EXT" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div><a id="id-1.10.4.54.2" class="indexterm" name="id-1.10.4.54.2"></a>
+  <p>The catalog <code class="structname">pg_statistic_ext</code> holds definitions of extended planner statistics. Each row in this catalog corresponds to a <em class="firstterm">statistics object</em> created with <a class="link" href="sql-createstatistics.html" title="CREATE STATISTICS"><code class="command">CREATE STATISTICS</code></a>.</p>
+  <div class="table" id="id-1.10.4.54.4">
+    <p class="title"><strong>Table&nbsp;52.52.&nbsp;<code class="structname">pg_statistic_ext</code> Columns</strong></p>
+    <div class="table-contents">
+      <table class="table" summary="pg_statistic_ext Columns" border="1">
+        <colgroup>
+          <col />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="catalog_table_entry">
+              <p class="column_definition">Column Type</p>
+              <p>Description</p>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">oid</code> <code class="type">oid</code></p>
+              <p>Row identifier</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">stxrelid</code> <code class="type">oid</code> (references <a class="link" href="catalog-pg-class.html" title="52.11.&nbsp;pg_class"><code class="structname">pg_class</code></a>.<code class="structfield">oid</code>)</p>
+              <p>Table containing the columns described by this object</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">stxname</code> <code class="type">name</code></p>
+              <p>Name of the statistics object</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">stxnamespace</code> <code class="type">oid</code> (references <a class="link" href="catalog-pg-namespace.html" title="52.32.&nbsp;pg_namespace"><code class="structname">pg_namespace</code></a>.<code class="structfield">oid</code>)</p>
+              <p>The OID of the namespace that contains this statistics object</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">stxowner</code> <code class="type">oid</code> (references <a class="link" href="catalog-pg-authid.html" title="52.8.&nbsp;pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)</p>
+              <p>Owner of the statistics object</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">stxkeys</code> <code class="type">int2vector</code> (references <a class="link" href="catalog-pg-attribute.html" title="52.7.&nbsp;pg_attribute"><code class="structname">pg_attribute</code></a>.<code class="structfield">attnum</code>)</p>
+              <p>An array of attribute numbers, indicating which table columns are covered by this statistics object; for example a value of <code class="literal">1 3</code> would mean that the first and the third table columns are covered</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">stxstattarget</code> <code class="type">int2</code></p>
+              <p><code class="structfield">stxstattarget</code> controls the level of detail of statistics accumulated for this statistics object by <a class="link" href="sql-analyze.html" title="ANALYZE"><code class="command">ANALYZE</code></a>. A zero value indicates that no statistics should be collected. A null value says to use the maximum of the statistics targets of the referenced columns, if set, or the system default statistics target. Positive values of <code class="structfield">stxstattarget</code> determine the target number of <span class="quote">“<span class="quote">most common values</span>”</span> to collect.</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">stxkind</code> <code class="type">char[]</code></p>
+              <p>An array containing codes for the enabled statistics kinds; valid values are: <code class="literal">d</code> for n-distinct statistics, <code class="literal">f</code> for functional dependency statistics, <code class="literal">m</code> for most common values (MCV) list statistics, and <code class="literal">e</code> for expression statistics</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">stxexprs</code> <code class="type">pg_node_tree</code></p>
+              <p>Expression trees (in <code class="function">nodeToString()</code> representation) for statistics object attributes that are not simple column references. This is a list with one element per expression. Null if all statistics object attributes are simple references.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div><br class="table-break" />
+  <p>The <code class="structname">pg_statistic_ext</code> entry is filled in completely during <a class="link" href="sql-createstatistics.html" title="CREATE STATISTICS"><code class="command">CREATE STATISTICS</code></a>, but the actual statistical values are not computed then. Subsequent <a class="link" href="sql-analyze.html" title="ANALYZE"><code class="command">ANALYZE</code></a> commands compute the desired values and populate an entry in the <a class="link" href="catalog-pg-statistic-ext-data.html" title="52.53.&nbsp;pg_statistic_ext_data"><code class="structname">pg_statistic_ext_data</code></a> catalog.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="catalog-pg-statistic.html" title="52.51.&nbsp;pg_statistic">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter&nbsp;52.&nbsp;System Catalogs">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="catalog-pg-statistic-ext-data.html" title="52.53.&nbsp;pg_statistic_ext_data">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">52.51.&nbsp;<code class="structname">pg_statistic</code>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;52.53.&nbsp;<code class="structname">pg_statistic_ext_data</code></td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/catalog-pg-statistic-ext.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

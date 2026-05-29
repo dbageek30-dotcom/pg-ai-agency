@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 34.17. Internals</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/ecpg-develop.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="34.17. Internals" />
+  <meta property="og:description" content="34.17.&amp;nbsp;Internals # This section explains how ECPG works internally. This information can occasionally be useful to help users understand how …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/ecpg-develop.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/ecpg-develop.html" title="PostgreSQL 18 - 34.17. Internals" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/ecpg-develop.html" title="PostgreSQL 18 - 34.17. Internals" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/ecpg-develop.html" title="PostgreSQL 17 - 34.17. Internals" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/ecpg-develop.html" title="PostgreSQL 16 - 34.17. Internals" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/ecpg-develop.html" title="PostgreSQL 15 - 34.17. Internals" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/ecpg-develop.html" title="PostgreSQL 14 - 34.17. Internals" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/ecpg-develop.html" title="PostgreSQL devel - 34.17. Internals"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/ecpg-develop.html" title="PostgreSQL 13 - 34.17. Internals"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/ecpg-develop.html" title="PostgreSQL 12 - 34.17. Internals"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/ecpg-develop.html" title="PostgreSQL 11 - 34.17. Internals"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/ecpg-develop.html" title="PostgreSQL 10 - 34.17. Internals"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/ecpg-develop.html" title="PostgreSQL 9.6 - 34.17. Internals"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/ecpg-develop.html" title="PostgreSQL 9.5 - 34.17. Internals"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/ecpg-develop.html" title="PostgreSQL 9.4 - 34.17. Internals"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/ecpg-develop.html" title="PostgreSQL 9.3 - 34.17. Internals"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/ecpg-develop.html" title="PostgreSQL 9.2 - 34.17. Internals"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/ecpg-develop.html" title="PostgreSQL 9.1 - 34.17. Internals"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/ecpg-develop.html" title="PostgreSQL 9.0 - 34.17. Internals"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/ecpg-develop.html" title="PostgreSQL 8.4 - 34.17. Internals"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/ecpg-develop.html" title="PostgreSQL 8.3 - 34.17. Internals"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/ecpg-develop.html" title="PostgreSQL 8.2 - 34.17. Internals"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/ecpg-develop.html" title="PostgreSQL 8.1 - 34.17. Internals"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/ecpg-develop.html" title="PostgreSQL 8.0 - 34.17. Internals"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/ecpg-develop.html" title="PostgreSQL 7.4 - 34.17. Internals"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/ecpg-develop.html" title="PostgreSQL 7.3 - 34.17. Internals"  rel="nofollow">7.3</a>
+                    
+                       / 
+                      <a href="/docs/7.2/ecpg-develop.html" title="PostgreSQL 7.2 - 34.17. Internals"  rel="nofollow">7.2</a>
+                    
+                       / 
+                      <a href="/docs/7.1/ecpg-develop.html" title="PostgreSQL 7.1 - 34.17. Internals"  rel="nofollow">7.1</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">34.17.&nbsp;Internals</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="ecpg-oracle-compat.html" title="34.16.&nbsp;Oracle Compatibility Mode">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter&nbsp;34.&nbsp;ECPG — Embedded SQL in C">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;34.&nbsp;<span class="application">ECPG</span> — Embedded <acronym class="acronym">SQL</acronym> in C</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="information-schema.html" title="Chapter&nbsp;35.&nbsp;The Information Schema">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="ECPG-DEVELOP">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">34.17.&nbsp;Internals <a href="#ECPG-DEVELOP" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <p>This section explains how <span class="application">ECPG</span> works internally. This information can occasionally be useful to help users understand how to use <span class="application">ECPG</span>.</p>
+  <p>The first four lines written by <code class="command">ecpg</code> to the output are fixed lines. Two are comments and two are include lines necessary to interface to the library. Then the preprocessor reads through the file and writes output. Normally it just echoes everything to the output.</p>
+  <p>When it sees an <code class="command">EXEC SQL</code> statement, it intervenes and changes it. The command starts with <code class="command">EXEC SQL</code> and ends with <code class="command">;</code>. Everything in between is treated as an <acronym class="acronym">SQL</acronym> statement and parsed for variable substitution.</p>
+  <p>Variable substitution occurs when a symbol starts with a colon (<code class="literal">:</code>). The variable with that name is looked up among the variables that were previously declared within a <code class="literal">EXEC SQL DECLARE</code> section.</p>
+  <p>The most important function in the library is <code class="function">ECPGdo</code>, which takes care of executing most commands. It takes a variable number of arguments. This can easily add up to 50 or so arguments, and we hope this will not be a problem on any platform.</p>
+  <p>The arguments are:</p>
+  <div class="variablelist">
+    <dl class="variablelist">
+      <dt id="ECPG-DEVELOP-LINE-NUMBER"><span class="term">A line number</span> <a href="#ECPG-DEVELOP-LINE-NUMBER" class="id_link">#</a></dt>
+      <dd>
+        <p>This is the line number of the original line; used in error messages only.</p>
+      </dd>
+      <dt id="ECPG-DEVELOP-STRING"><span class="term">A string</span> <a href="#ECPG-DEVELOP-STRING" class="id_link">#</a></dt>
+      <dd>
+        <p>This is the <acronym class="acronym">SQL</acronym> command that is to be issued. It is modified by the input variables, i.e., the variables that where not known at compile time but are to be entered in the command. Where the variables should go the string contains <code class="literal">?</code>.</p>
+      </dd>
+      <dt id="ECPG-DEVELOP-INPUT-VARIABLES"><span class="term">Input variables</span> <a href="#ECPG-DEVELOP-INPUT-VARIABLES" class="id_link">#</a></dt>
+      <dd>
+        <p>Every input variable causes ten arguments to be created. (See below.)</p>
+      </dd>
+      <dt id="ECPG-DEVELOP-ECPGT-EOIT"><span class="term"><em class="parameter"><code>ECPGt_EOIT</code></em></span> <a href="#ECPG-DEVELOP-ECPGT-EOIT" class="id_link">#</a></dt>
+      <dd>
+        <p>An <code class="type">enum</code> telling that there are no more input variables.</p>
+      </dd>
+      <dt id="ECPG-DEVELOP-OUTPUT-VARIABLES"><span class="term">Output variables</span> <a href="#ECPG-DEVELOP-OUTPUT-VARIABLES" class="id_link">#</a></dt>
+      <dd>
+        <p>Every output variable causes ten arguments to be created. (See below.) These variables are filled by the function.</p>
+      </dd>
+      <dt id="ECPG-DEVELOP-ECPGT-EORT"><span class="term"><em class="parameter"><code>ECPGt_EORT</code></em></span> <a href="#ECPG-DEVELOP-ECPGT-EORT" class="id_link">#</a></dt>
+      <dd>
+        <p>An <code class="type">enum</code> telling that there are no more variables.</p>
+      </dd>
+    </dl>
+  </div>
+  <p>For every variable that is part of the <acronym class="acronym">SQL</acronym> command, the function gets ten arguments:</p>
+  <div class="orderedlist">
+    <ol class="orderedlist" type="1">
+      <li class="listitem">
+        <p>The type as a special symbol.</p>
+      </li>
+      <li class="listitem">
+        <p>A pointer to the value or a pointer to the pointer.</p>
+      </li>
+      <li class="listitem">
+        <p>The size of the variable if it is a <code class="type">char</code> or <code class="type">varchar</code>.</p>
+      </li>
+      <li class="listitem">
+        <p>The number of elements in the array (for array fetches).</p>
+      </li>
+      <li class="listitem">
+        <p>The offset to the next element in the array (for array fetches).</p>
+      </li>
+      <li class="listitem">
+        <p>The type of the indicator variable as a special symbol.</p>
+      </li>
+      <li class="listitem">
+        <p>A pointer to the indicator variable.</p>
+      </li>
+      <li class="listitem">
+        <p>0</p>
+      </li>
+      <li class="listitem">
+        <p>The number of elements in the indicator array (for array fetches).</p>
+      </li>
+      <li class="listitem">
+        <p>The offset to the next element in the indicator array (for array fetches).</p>
+      </li>
+    </ol>
+  </div>
+  <p>Note that not all SQL commands are treated in this way. For instance, an open cursor statement like:</p>
+  <pre class="programlisting">
+EXEC SQL OPEN <em class="replaceable"><code>cursor</code></em>;
+</pre>
+  <p>is not copied to the output. Instead, the cursor's <code class="command">DECLARE</code> command is used at the position of the <code class="command">OPEN</code> command because it indeed opens the cursor.</p>
+  <p>Here is a complete example describing the output of the preprocessor of a file <code class="filename">foo.pgc</code> (details might change with each particular version of the preprocessor):</p>
+  <pre class="programlisting">
+EXEC SQL BEGIN DECLARE SECTION;
+int index;
+int result;
+EXEC SQL END DECLARE SECTION;
+...
+EXEC SQL SELECT res INTO :result FROM mytable WHERE index = :index;
+</pre>
+  <p>is translated into:</p>
+  <pre class="programlisting">
+/* Processed by ecpg (2.6.0) */
+/* These two include files are added by the preprocessor */
+#include &lt;ecpgtype.h&gt;;
+#include &lt;ecpglib.h&gt;;
+
+/* exec sql begin declare section */
+
+#line 1 "foo.pgc"
+
+ int index;
+ int result;
+/* exec sql end declare section */
+...
+ECPGdo(__LINE__, NULL, "SELECT res FROM mytable WHERE index = ?     ",
+        ECPGt_int,&amp;(index),1L,1L,sizeof(int),
+        ECPGt_NO_INDICATOR, NULL , 0L, 0L, 0L, ECPGt_EOIT,
+        ECPGt_int,&amp;(result),1L,1L,sizeof(int),
+        ECPGt_NO_INDICATOR, NULL , 0L, 0L, 0L, ECPGt_EORT);
+#line 147 "foo.pgc"
+
+</pre>
+  <p>(The indentation here is added for readability and not something the preprocessor does.)</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="ecpg-oracle-compat.html" title="34.16.&nbsp;Oracle Compatibility Mode">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter&nbsp;34.&nbsp;ECPG — Embedded SQL in C">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="information-schema.html" title="Chapter&nbsp;35.&nbsp;The Information Schema">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">34.16.&nbsp;<span class="productname">Oracle</span> Compatibility Mode&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;35.&nbsp;The Information Schema</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/ecpg-develop.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

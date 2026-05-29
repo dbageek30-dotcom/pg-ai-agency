@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 15.4. Parallel Safety</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/parallel-safety.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="15.4. Parallel Safety" />
+  <meta property="og:description" content="15.4.&amp;nbsp;Parallel Safety # 15.4.1. Parallel Labeling for Functions and Aggregates The planner classifies operations involved in a query as either …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/parallel-safety.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/parallel-safety.html" title="PostgreSQL 18 - 15.4. Parallel Safety" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/parallel-safety.html" title="PostgreSQL 18 - 15.4. Parallel Safety" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/parallel-safety.html" title="PostgreSQL 17 - 15.4. Parallel Safety" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/parallel-safety.html" title="PostgreSQL 16 - 15.4. Parallel Safety" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/parallel-safety.html" title="PostgreSQL 15 - 15.4. Parallel Safety" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/parallel-safety.html" title="PostgreSQL 14 - 15.4. Parallel Safety" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/parallel-safety.html" title="PostgreSQL devel - 15.4. Parallel Safety"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/parallel-safety.html" title="PostgreSQL 13 - 15.4. Parallel Safety"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/parallel-safety.html" title="PostgreSQL 12 - 15.4. Parallel Safety"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/parallel-safety.html" title="PostgreSQL 11 - 15.4. Parallel Safety"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/parallel-safety.html" title="PostgreSQL 10 - 15.4. Parallel Safety"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/parallel-safety.html" title="PostgreSQL 9.6 - 15.4. Parallel Safety"  rel="nofollow">9.6</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">15.4.&nbsp;Parallel Safety</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="parallel-plans.html" title="15.3.&nbsp;Parallel Plans">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="parallel-query.html" title="Chapter&nbsp;15.&nbsp;Parallel Query">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;15.&nbsp;Parallel Query</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="admin.html" title="Part&nbsp;III.&nbsp;Server Administration">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="PARALLEL-SAFETY">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">15.4.&nbsp;Parallel Safety <a href="#PARALLEL-SAFETY" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <div class="toc">
+    <dl class="toc">
+      <dt><span class="sect2"><a href="parallel-safety.html#PARALLEL-LABELING">15.4.1. Parallel Labeling for Functions and Aggregates</a></span></dt>
+    </dl>
+  </div>
+  <p>The planner classifies operations involved in a query as either <em class="firstterm">parallel safe</em>, <em class="firstterm">parallel restricted</em>, or <em class="firstterm">parallel unsafe</em>. A parallel safe operation is one that does not conflict with the use of parallel query. A parallel restricted operation is one that cannot be performed in a parallel worker, but that can be performed in the leader while parallel query is in use. Therefore, parallel restricted operations can never occur below a <code class="literal">Gather</code> or <code class="literal">Gather Merge</code> node, but can occur elsewhere in a plan that contains such a node. A parallel unsafe operation is one that cannot be performed while parallel query is in use, not even in the leader. When a query contains anything that is parallel unsafe, parallel query is completely disabled for that query.</p>
+  <p>The following operations are always parallel restricted:</p>
+  <div class="itemizedlist">
+    <ul class="itemizedlist" style="list-style-type: disc;">
+      <li class="listitem">
+        <p>Scans of common table expressions (CTEs).</p>
+      </li>
+      <li class="listitem">
+        <p>Scans of temporary tables.</p>
+      </li>
+      <li class="listitem">
+        <p>Scans of foreign tables, unless the foreign data wrapper has an <code class="literal">IsForeignScanParallelSafe</code> API that indicates otherwise.</p>
+      </li>
+      <li class="listitem">
+        <p>Plan nodes that reference a correlated <code class="literal">SubPlan</code>.</p>
+      </li>
+    </ul>
+  </div>
+  <div class="sect2" id="PARALLEL-LABELING">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">15.4.1.&nbsp;Parallel Labeling for Functions and Aggregates <a href="#PARALLEL-LABELING" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>The planner cannot automatically determine whether a user-defined function or aggregate is parallel safe, parallel restricted, or parallel unsafe, because this would require predicting every operation that the function could possibly perform. In general, this is equivalent to the Halting Problem and therefore impossible. Even for simple functions where it could conceivably be done, we do not try, since this would be expensive and error-prone. Instead, all user-defined functions are assumed to be parallel unsafe unless otherwise marked. When using <a class="xref" href="sql-createfunction.html" title="CREATE FUNCTION"><span class="refentrytitle">CREATE FUNCTION</span></a> or <a class="xref" href="sql-alterfunction.html" title="ALTER FUNCTION"><span class="refentrytitle">ALTER FUNCTION</span></a>, markings can be set by specifying <code class="literal">PARALLEL SAFE</code>, <code class="literal">PARALLEL RESTRICTED</code>, or <code class="literal">PARALLEL UNSAFE</code> as appropriate. When using <a class="xref" href="sql-createaggregate.html" title="CREATE AGGREGATE"><span class="refentrytitle">CREATE AGGREGATE</span></a>, the <code class="literal">PARALLEL</code> option can be specified with <code class="literal">SAFE</code>, <code class="literal">RESTRICTED</code>, or <code class="literal">UNSAFE</code> as the corresponding value.</p>
+    <p>Functions and aggregates must be marked <code class="literal">PARALLEL UNSAFE</code> if they write to the database, change the transaction state (other than by using a subtransaction for error recovery), access sequences, or make persistent changes to settings. Similarly, functions must be marked <code class="literal">PARALLEL RESTRICTED</code> if they access temporary tables, client connection state, cursors, prepared statements, or miscellaneous backend-local state that the system cannot synchronize across workers. For example, <code class="literal">setseed</code> and <code class="literal">random</code> are parallel restricted for this last reason.</p>
+    <p>In general, if a function is labeled as being safe when it is restricted or unsafe, or if it is labeled as being restricted when it is in fact unsafe, it may throw errors or produce wrong answers when used in a parallel query. C-language functions could in theory exhibit totally undefined behavior if mislabeled, since there is no way for the system to protect itself against arbitrary C code, but in most likely cases the result will be no worse than for any other function. If in doubt, it is probably best to label functions as <code class="literal">UNSAFE</code>.</p>
+    <p>If a function executed within a parallel worker acquires locks that are not held by the leader, for example by querying a table not referenced in the query, those locks will be released at worker exit, not end of transaction. If you write a function that does this, and this behavior difference is important to you, mark such functions as <code class="literal">PARALLEL RESTRICTED</code> to ensure that they execute only in the leader.</p>
+    <p>Note that the query planner does not consider deferring the evaluation of parallel-restricted functions or aggregates involved in the query in order to obtain a superior plan. So, for example, if a <code class="literal">WHERE</code> clause applied to a particular table is parallel restricted, the query planner will not consider performing a scan of that table in the parallel portion of a plan. In some cases, it would be possible (and perhaps even efficient) to include the scan of that table in the parallel portion of the query and defer the evaluation of the <code class="literal">WHERE</code> clause so that it happens above the <code class="literal">Gather</code> node. However, the planner does not do this.</p>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="parallel-plans.html" title="15.3.&nbsp;Parallel Plans">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="parallel-query.html" title="Chapter&nbsp;15.&nbsp;Parallel Query">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="admin.html" title="Part&nbsp;III.&nbsp;Server Administration">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">15.3.&nbsp;Parallel Plans&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;Part&nbsp;III.&nbsp;Server Administration</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/parallel-safety.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 52.21. pg_event_trigger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/catalog-pg-event-trigger.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="52.21. pg_event_trigger" />
+  <meta property="og:description" content="52.21.&amp;nbsp;pg_event_trigger # The catalog pg_event_trigger stores event triggers. See Chapter&amp;nbsp;38 for more information. Table&amp;nbsp;52.21.&amp;nbsp;pg_event_trigger Columns Column Type Description oid oid …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/catalog-pg-event-trigger.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/catalog-pg-event-trigger.html" title="PostgreSQL 18 - 52.21. pg_event_trigger" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/catalog-pg-event-trigger.html" title="PostgreSQL 18 - 52.21. pg_event_trigger" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/catalog-pg-event-trigger.html" title="PostgreSQL 17 - 52.21. pg_event_trigger" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/catalog-pg-event-trigger.html" title="PostgreSQL 16 - 52.21. pg_event_trigger" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/catalog-pg-event-trigger.html" title="PostgreSQL 15 - 52.21. pg_event_trigger" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/catalog-pg-event-trigger.html" title="PostgreSQL 14 - 52.21. pg_event_trigger" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/catalog-pg-event-trigger.html" title="PostgreSQL devel - 52.21. pg_event_trigger"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/catalog-pg-event-trigger.html" title="PostgreSQL 13 - 52.21. pg_event_trigger"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/catalog-pg-event-trigger.html" title="PostgreSQL 12 - 52.21. pg_event_trigger"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/catalog-pg-event-trigger.html" title="PostgreSQL 11 - 52.21. pg_event_trigger"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/catalog-pg-event-trigger.html" title="PostgreSQL 10 - 52.21. pg_event_trigger"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/catalog-pg-event-trigger.html" title="PostgreSQL 9.6 - 52.21. pg_event_trigger"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/catalog-pg-event-trigger.html" title="PostgreSQL 9.5 - 52.21. pg_event_trigger"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/catalog-pg-event-trigger.html" title="PostgreSQL 9.4 - 52.21. pg_event_trigger"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/catalog-pg-event-trigger.html" title="PostgreSQL 9.3 - 52.21. pg_event_trigger"  rel="nofollow">9.3</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">52.21.&nbsp;<code class="structname">pg_event_trigger</code></th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="catalog-pg-enum.html" title="52.20.&nbsp;pg_enum">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter&nbsp;52.&nbsp;System Catalogs">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;52.&nbsp;System Catalogs</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="catalog-pg-extension.html" title="52.22.&nbsp;pg_extension">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="CATALOG-PG-EVENT-TRIGGER">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">52.21.&nbsp;<code class="structname">pg_event_trigger</code> <a href="#CATALOG-PG-EVENT-TRIGGER" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div><a id="id-1.10.4.23.2" class="indexterm" name="id-1.10.4.23.2"></a>
+  <p>The catalog <code class="structname">pg_event_trigger</code> stores event triggers. See <a class="xref" href="event-triggers.html" title="Chapter&nbsp;38.&nbsp;Event Triggers">Chapter&nbsp;38</a> for more information.</p>
+  <div class="table" id="id-1.10.4.23.4">
+    <p class="title"><strong>Table&nbsp;52.21.&nbsp;<code class="structname">pg_event_trigger</code> Columns</strong></p>
+    <div class="table-contents">
+      <table class="table" summary="pg_event_trigger Columns" border="1">
+        <colgroup>
+          <col />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="catalog_table_entry">
+              <p class="column_definition">Column Type</p>
+              <p>Description</p>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">oid</code> <code class="type">oid</code></p>
+              <p>Row identifier</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">evtname</code> <code class="type">name</code></p>
+              <p>Trigger name (must be unique)</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">evtevent</code> <code class="type">name</code></p>
+              <p>Identifies the event for which this trigger fires</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">evtowner</code> <code class="type">oid</code> (references <a class="link" href="catalog-pg-authid.html" title="52.8.&nbsp;pg_authid"><code class="structname">pg_authid</code></a>.<code class="structfield">oid</code>)</p>
+              <p>Owner of the event trigger</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">evtfoid</code> <code class="type">oid</code> (references <a class="link" href="catalog-pg-proc.html" title="52.39.&nbsp;pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)</p>
+              <p>The function to be called</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">evtenabled</code> <code class="type">char</code></p>
+              <p>Controls in which <a class="xref" href="runtime-config-client.html#GUC-SESSION-REPLICATION-ROLE">session_replication_role</a> modes the event trigger fires. <code class="literal">O</code> = trigger fires in <span class="quote">“<span class="quote">origin</span>”</span> and <span class="quote">“<span class="quote">local</span>”</span> modes, <code class="literal">D</code> = trigger is disabled, <code class="literal">R</code> = trigger fires in <span class="quote">“<span class="quote">replica</span>”</span> mode, <code class="literal">A</code> = trigger fires always.</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">evttags</code> <code class="type">text[]</code></p>
+              <p>Command tags for which this trigger will fire. If NULL, the firing of this trigger is not restricted on the basis of the command tag.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div><br class="table-break" />
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="catalog-pg-enum.html" title="52.20.&nbsp;pg_enum">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter&nbsp;52.&nbsp;System Catalogs">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="catalog-pg-extension.html" title="52.22.&nbsp;pg_extension">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">52.20.&nbsp;<code class="structname">pg_enum</code>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;52.22.&nbsp;<code class="structname">pg_extension</code></td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/catalog-pg-event-trigger.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

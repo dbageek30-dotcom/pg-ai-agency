@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 19.13. Version and Platform Compatibility</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/runtime-config-compatible.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="19.13. Version and Platform Compatibility" />
+  <meta property="og:description" content="19.13.&amp;nbsp;Version and Platform Compatibility # 19.13.1. Previous PostgreSQL Versions 19.13.2. Platform and Client Compatibility 19.13.1.&amp;nbsp;Previous PostgreSQL Versions # array_nulls (boolean) …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/runtime-config-compatible.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/runtime-config-compatible.html" title="PostgreSQL 18 - 19.13. Version and Platform Compatibility" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/runtime-config-compatible.html" title="PostgreSQL 18 - 19.13. Version and Platform Compatibility" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/runtime-config-compatible.html" title="PostgreSQL 17 - 19.13. Version and Platform Compatibility" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/runtime-config-compatible.html" title="PostgreSQL 16 - 19.13. Version and Platform Compatibility" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/runtime-config-compatible.html" title="PostgreSQL 15 - 19.13. Version and Platform Compatibility" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/runtime-config-compatible.html" title="PostgreSQL 14 - 19.13. Version and Platform Compatibility" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/runtime-config-compatible.html" title="PostgreSQL devel - 19.13. Version and Platform Compatibility"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/runtime-config-compatible.html" title="PostgreSQL 13 - 19.13. Version and Platform Compatibility"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/runtime-config-compatible.html" title="PostgreSQL 12 - 19.13. Version and Platform Compatibility"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/runtime-config-compatible.html" title="PostgreSQL 11 - 19.13. Version and Platform Compatibility"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/runtime-config-compatible.html" title="PostgreSQL 10 - 19.13. Version and Platform Compatibility"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/runtime-config-compatible.html" title="PostgreSQL 9.6 - 19.13. Version and Platform Compatibility"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/runtime-config-compatible.html" title="PostgreSQL 9.5 - 19.13. Version and Platform Compatibility"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/runtime-config-compatible.html" title="PostgreSQL 9.4 - 19.13. Version and Platform Compatibility"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/runtime-config-compatible.html" title="PostgreSQL 9.3 - 19.13. Version and Platform Compatibility"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/runtime-config-compatible.html" title="PostgreSQL 9.2 - 19.13. Version and Platform Compatibility"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/runtime-config-compatible.html" title="PostgreSQL 9.1 - 19.13. Version and Platform Compatibility"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/runtime-config-compatible.html" title="PostgreSQL 9.0 - 19.13. Version and Platform Compatibility"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/runtime-config-compatible.html" title="PostgreSQL 8.4 - 19.13. Version and Platform Compatibility"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/runtime-config-compatible.html" title="PostgreSQL 8.3 - 19.13. Version and Platform Compatibility"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/runtime-config-compatible.html" title="PostgreSQL 8.2 - 19.13. Version and Platform Compatibility"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/runtime-config-compatible.html" title="PostgreSQL 8.1 - 19.13. Version and Platform Compatibility"  rel="nofollow">8.1</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">19.13.&nbsp;Version and Platform Compatibility</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="runtime-config-locks.html" title="19.12.&nbsp;Lock Management">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="runtime-config.html" title="Chapter&nbsp;19.&nbsp;Server Configuration">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;19.&nbsp;Server Configuration</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="runtime-config-error-handling.html" title="19.14.&nbsp;Error Handling">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="RUNTIME-CONFIG-COMPATIBLE">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">19.13.&nbsp;Version and Platform Compatibility <a href="#RUNTIME-CONFIG-COMPATIBLE" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <div class="toc">
+    <dl class="toc">
+      <dt><span class="sect2"><a href="runtime-config-compatible.html#RUNTIME-CONFIG-COMPATIBLE-VERSION">19.13.1. Previous PostgreSQL Versions</a></span></dt>
+      <dt><span class="sect2"><a href="runtime-config-compatible.html#RUNTIME-CONFIG-COMPATIBLE-CLIENTS">19.13.2. Platform and Client Compatibility</a></span></dt>
+    </dl>
+  </div>
+  <div class="sect2" id="RUNTIME-CONFIG-COMPATIBLE-VERSION">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">19.13.1.&nbsp;Previous PostgreSQL Versions <a href="#RUNTIME-CONFIG-COMPATIBLE-VERSION" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <div class="variablelist">
+      <dl class="variablelist">
+        <dt id="GUC-ARRAY-NULLS"><span class="term"><code class="varname">array_nulls</code> (<code class="type">boolean</code>) <a id="id-1.6.6.16.2.2.1.1.3" class="indexterm" name="id-1.6.6.16.2.2.1.1.3"></a></span> <a href="#GUC-ARRAY-NULLS" class="id_link">#</a></dt>
+        <dd>
+          <p>This controls whether the array input parser recognizes unquoted <code class="literal">NULL</code> as specifying a null array element. By default, this is <code class="literal">on</code>, allowing array values containing null values to be entered. However, <span class="productname">PostgreSQL</span> versions before 8.2 did not support null values in arrays, and therefore would treat <code class="literal">NULL</code> as specifying a normal array element with the string value <span class="quote">“<span class="quote">NULL</span>”</span>. For backward compatibility with applications that require the old behavior, this variable can be turned <code class="literal">off</code>.</p>
+          <p>Note that it is possible to create array values containing null values even when this variable is <code class="literal">off</code>.</p>
+        </dd>
+        <dt id="GUC-BACKSLASH-QUOTE"><span class="term"><code class="varname">backslash_quote</code> (<code class="type">enum</code>) <a id="id-1.6.6.16.2.2.2.1.3" class="indexterm" name="id-1.6.6.16.2.2.2.1.3"></a> <a id="id-1.6.6.16.2.2.2.1.4" class="indexterm" name="id-1.6.6.16.2.2.2.1.4"></a></span> <a href="#GUC-BACKSLASH-QUOTE" class="id_link">#</a></dt>
+        <dd>
+          <p>This controls whether a quote mark can be represented by <code class="literal">\'</code> in a string literal. The preferred, SQL-standard way to represent a quote mark is by doubling it (<code class="literal">''</code>) but <span class="productname">PostgreSQL</span> has historically also accepted <code class="literal">\'</code>. However, use of <code class="literal">\'</code> creates security risks because in some client character set encodings, there are multibyte characters in which the last byte is numerically equivalent to ASCII <code class="literal">\</code>. If client-side code does escaping incorrectly then an SQL-injection attack is possible. This risk can be prevented by making the server reject queries in which a quote mark appears to be escaped by a backslash. The allowed values of <code class="varname">backslash_quote</code> are <code class="literal">on</code> (allow <code class="literal">\'</code> always), <code class="literal">off</code> (reject always), and <code class="literal">safe_encoding</code> (allow only if client encoding does not allow ASCII <code class="literal">\</code> within a multibyte character). <code class="literal">safe_encoding</code> is the default setting.</p>
+          <p>Note that in a standard-conforming string literal, <code class="literal">\</code> just means <code class="literal">\</code> anyway. This parameter only affects the handling of non-standard-conforming literals, including escape string syntax (<code class="literal">E'...'</code>).</p>
+        </dd>
+        <dt id="GUC-ESCAPE-STRING-WARNING"><span class="term"><code class="varname">escape_string_warning</code> (<code class="type">boolean</code>) <a id="id-1.6.6.16.2.2.3.1.3" class="indexterm" name="id-1.6.6.16.2.2.3.1.3"></a> <a id="id-1.6.6.16.2.2.3.1.4" class="indexterm" name="id-1.6.6.16.2.2.3.1.4"></a></span> <a href="#GUC-ESCAPE-STRING-WARNING" class="id_link">#</a></dt>
+        <dd>
+          <p>When on, a warning is issued if a backslash (<code class="literal">\</code>) appears in an ordinary string literal (<code class="literal">'...'</code> syntax) and <code class="varname">standard_conforming_strings</code> is off. The default is <code class="literal">on</code>.</p>
+          <p>Applications that wish to use backslash as escape should be modified to use escape string syntax (<code class="literal">E'...'</code>), because the default behavior of ordinary strings is now to treat backslash as an ordinary character, per SQL standard. This variable can be enabled to help locate code that needs to be changed.</p>
+        </dd>
+        <dt id="GUC-LO-COMPAT-PRIVILEGES"><span class="term"><code class="varname">lo_compat_privileges</code> (<code class="type">boolean</code>) <a id="id-1.6.6.16.2.2.4.1.3" class="indexterm" name="id-1.6.6.16.2.2.4.1.3"></a></span> <a href="#GUC-LO-COMPAT-PRIVILEGES" class="id_link">#</a></dt>
+        <dd>
+          <p>In <span class="productname">PostgreSQL</span> releases prior to 9.0, large objects did not have access privileges and were, therefore, always readable and writable by all users. Setting this variable to <code class="literal">on</code> disables the new privilege checks, for compatibility with prior releases. The default is <code class="literal">off</code>. Only superusers and users with the appropriate <code class="literal">SET</code> privilege can change this setting.</p>
+          <p>Setting this variable does not disable all security checks related to large objects — only those for which the default behavior has changed in <span class="productname">PostgreSQL</span> 9.0.</p>
+        </dd>
+        <dt id="GUC-QUOTE-ALL-IDENTIFIERS"><span class="term"><code class="varname">quote_all_identifiers</code> (<code class="type">boolean</code>) <a id="id-1.6.6.16.2.2.5.1.3" class="indexterm" name="id-1.6.6.16.2.2.5.1.3"></a></span> <a href="#GUC-QUOTE-ALL-IDENTIFIERS" class="id_link">#</a></dt>
+        <dd>
+          <p>When the database generates SQL, force all identifiers to be quoted, even if they are not (currently) keywords. This will affect the output of <code class="command">EXPLAIN</code> as well as the results of functions like <code class="function">pg_get_viewdef</code>. See also the <code class="option">--quote-all-identifiers</code> option of <a class="xref" href="app-pgdump.html" title="pg_dump"><span class="refentrytitle"><span class="application">pg_dump</span></span></a> and <a class="xref" href="app-pg-dumpall.html" title="pg_dumpall"><span class="refentrytitle"><span class="application">pg_dumpall</span></span></a>.</p>
+        </dd>
+        <dt id="GUC-STANDARD-CONFORMING-STRINGS"><span class="term"><code class="varname">standard_conforming_strings</code> (<code class="type">boolean</code>) <a id="id-1.6.6.16.2.2.6.1.3" class="indexterm" name="id-1.6.6.16.2.2.6.1.3"></a> <a id="id-1.6.6.16.2.2.6.1.4" class="indexterm" name="id-1.6.6.16.2.2.6.1.4"></a></span> <a href="#GUC-STANDARD-CONFORMING-STRINGS" class="id_link">#</a></dt>
+        <dd>
+          <p>This controls whether ordinary string literals (<code class="literal">'...'</code>) treat backslashes literally, as specified in the SQL standard. Beginning in <span class="productname">PostgreSQL</span> 9.1, the default is <code class="literal">on</code> (prior releases defaulted to <code class="literal">off</code>). Applications can check this parameter to determine how string literals will be processed. The presence of this parameter can also be taken as an indication that the escape string syntax (<code class="literal">E'...'</code>) is supported. Escape string syntax (<a class="xref" href="sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-ESCAPE" title="4.1.2.2.&nbsp;String Constants with C-Style Escapes">Section&nbsp;4.1.2.2</a>) should be used if an application desires backslashes to be treated as escape characters.</p>
+        </dd>
+        <dt id="GUC-SYNCHRONIZE-SEQSCANS"><span class="term"><code class="varname">synchronize_seqscans</code> (<code class="type">boolean</code>) <a id="id-1.6.6.16.2.2.7.1.3" class="indexterm" name="id-1.6.6.16.2.2.7.1.3"></a></span> <a href="#GUC-SYNCHRONIZE-SEQSCANS" class="id_link">#</a></dt>
+        <dd>
+          <p>This allows sequential scans of large tables to synchronize with each other, so that concurrent scans read the same block at about the same time and hence share the I/O workload. When this is enabled, a scan might start in the middle of the table and then <span class="quote">“<span class="quote">wrap around</span>”</span> the end to cover all rows, so as to synchronize with the activity of scans already in progress. This can result in unpredictable changes in the row ordering returned by queries that have no <code class="literal">ORDER BY</code> clause. Setting this parameter to <code class="literal">off</code> ensures the pre-8.3 behavior in which a sequential scan always starts from the beginning of the table. The default is <code class="literal">on</code>.</p>
+        </dd>
+      </dl>
+    </div>
+  </div>
+  <div class="sect2" id="RUNTIME-CONFIG-COMPATIBLE-CLIENTS">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">19.13.2.&nbsp;Platform and Client Compatibility <a href="#RUNTIME-CONFIG-COMPATIBLE-CLIENTS" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <div class="variablelist">
+      <dl class="variablelist">
+        <dt id="GUC-TRANSFORM-NULL-EQUALS"><span class="term"><code class="varname">transform_null_equals</code> (<code class="type">boolean</code>) <a id="id-1.6.6.16.3.2.1.1.3" class="indexterm" name="id-1.6.6.16.3.2.1.1.3"></a> <a id="id-1.6.6.16.3.2.1.1.4" class="indexterm" name="id-1.6.6.16.3.2.1.1.4"></a></span> <a href="#GUC-TRANSFORM-NULL-EQUALS" class="id_link">#</a></dt>
+        <dd>
+          <p>When on, expressions of the form <code class="literal"><em class="replaceable"><code>expr</code></em> = NULL</code> (or <code class="literal">NULL = <em class="replaceable"><code>expr</code></em></code>) are treated as <code class="literal"><em class="replaceable"><code>expr</code></em> IS NULL</code>, that is, they return true if <em class="replaceable"><code>expr</code></em> evaluates to the null value, and false otherwise. The correct SQL-spec-compliant behavior of <code class="literal"><em class="replaceable"><code>expr</code></em> = NULL</code> is to always return null (unknown). Therefore this parameter defaults to <code class="literal">off</code>.</p>
+          <p>However, filtered forms in <span class="productname">Microsoft Access</span> generate queries that appear to use <code class="literal"><em class="replaceable"><code>expr</code></em> = NULL</code> to test for null values, so if you use that interface to access the database you might want to turn this option on. Since expressions of the form <code class="literal"><em class="replaceable"><code>expr</code></em> = NULL</code> always return the null value (using the SQL standard interpretation), they are not very useful and do not appear often in normal applications so this option does little harm in practice. But new users are frequently confused about the semantics of expressions involving null values, so this option is off by default.</p>
+          <p>Note that this option only affects the exact form <code class="literal">= NULL</code>, not other comparison operators or other expressions that are computationally equivalent to some expression involving the equals operator (such as <code class="literal">IN</code>). Thus, this option is not a general fix for bad programming.</p>
+          <p>Refer to <a class="xref" href="functions-comparison.html" title="9.2.&nbsp;Comparison Functions and Operators">Section&nbsp;9.2</a> for related information.</p>
+        </dd>
+        <dt id="GUC-ALLOW-ALTER-SYSTEM"><span class="term"><code class="varname">allow_alter_system</code> (<code class="type">boolean</code>) <a id="id-1.6.6.16.3.2.2.1.3" class="indexterm" name="id-1.6.6.16.3.2.2.1.3"></a></span> <a href="#GUC-ALLOW-ALTER-SYSTEM" class="id_link">#</a></dt>
+        <dd>
+          <p>When <code class="literal">allow_alter_system</code> is set to <code class="literal">off</code>, an error is returned if the <code class="command">ALTER SYSTEM</code> command is executed. This parameter can only be set in the <code class="filename">postgresql.conf</code> file or on the server command line. The default value is <code class="literal">on</code>.</p>
+          <p>Note that this setting must not be regarded as a security feature. It only disables the <code class="literal">ALTER SYSTEM</code> command. It does not prevent a superuser from changing the configuration using other SQL commands. A superuser has many ways of executing shell commands at the operating system level, and can therefore modify <code class="literal">postgresql.auto.conf</code> regardless of the value of this setting.</p>
+          <p>Turning this setting off is intended for environments where the configuration of <span class="productname">PostgreSQL</span> is managed by some external tool. In such environments, a well-intentioned superuser might <span class="emphasis"><em>mistakenly</em></span> use <code class="command">ALTER SYSTEM</code> to change the configuration instead of using the external tool. This might result in unintended behavior, such as the external tool overwriting the change at some later point in time when it updates the configuration. Setting this parameter to <code class="literal">off</code> can help avoid such mistakes.</p>
+          <p>This parameter only controls the use of <code class="command">ALTER SYSTEM</code>. The settings stored in <code class="filename">postgresql.auto.conf</code> take effect even if <code class="literal">allow_alter_system</code> is set to <code class="literal">off</code>.</p>
+        </dd>
+      </dl>
+    </div>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="runtime-config-locks.html" title="19.12.&nbsp;Lock Management">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="runtime-config.html" title="Chapter&nbsp;19.&nbsp;Server Configuration">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="runtime-config-error-handling.html" title="19.14.&nbsp;Error Handling">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">19.12.&nbsp;Lock Management&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;19.14.&nbsp;Error Handling</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/runtime-config-compatible.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

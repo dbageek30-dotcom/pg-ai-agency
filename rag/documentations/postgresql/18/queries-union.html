@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/queries-union.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="7.4. Combining Queries (UNION, INTERSECT, EXCEPT)" />
+  <meta property="og:description" content="7.4.&amp;nbsp;Combining Queries (UNION, INTERSECT, EXCEPT) # The results of two queries can be combined using the set operations union, intersection, …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/queries-union.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/queries-union.html" title="PostgreSQL 18 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/queries-union.html" title="PostgreSQL 18 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/queries-union.html" title="PostgreSQL 17 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/queries-union.html" title="PostgreSQL 16 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/queries-union.html" title="PostgreSQL 15 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/queries-union.html" title="PostgreSQL 14 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/queries-union.html" title="PostgreSQL devel - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/queries-union.html" title="PostgreSQL 13 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/queries-union.html" title="PostgreSQL 12 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/queries-union.html" title="PostgreSQL 11 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/queries-union.html" title="PostgreSQL 10 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/queries-union.html" title="PostgreSQL 9.6 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/queries-union.html" title="PostgreSQL 9.5 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/queries-union.html" title="PostgreSQL 9.4 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/queries-union.html" title="PostgreSQL 9.3 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/queries-union.html" title="PostgreSQL 9.2 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/queries-union.html" title="PostgreSQL 9.1 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/queries-union.html" title="PostgreSQL 9.0 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/queries-union.html" title="PostgreSQL 8.4 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/queries-union.html" title="PostgreSQL 8.3 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/queries-union.html" title="PostgreSQL 8.2 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/queries-union.html" title="PostgreSQL 8.1 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/queries-union.html" title="PostgreSQL 8.0 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/queries-union.html" title="PostgreSQL 7.4 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/queries-union.html" title="PostgreSQL 7.3 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">7.3</a>
+                    
+                       / 
+                      <a href="/docs/7.2/queries-union.html" title="PostgreSQL 7.2 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">7.2</a>
+                    
+                       / 
+                      <a href="/docs/7.1/queries-union.html" title="PostgreSQL 7.1 - 7.4. Combining Queries (UNION, INTERSECT, EXCEPT)"  rel="nofollow">7.1</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">7.4.&nbsp;Combining Queries (<code class="literal">UNION</code>, <code class="literal">INTERSECT</code>, <code class="literal">EXCEPT</code>)</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="queries-select-lists.html" title="7.3.&nbsp;Select Lists">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="queries.html" title="Chapter&nbsp;7.&nbsp;Queries">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;7.&nbsp;Queries</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="queries-order.html" title="7.5.&nbsp;Sorting Rows (ORDER BY)">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="QUERIES-UNION">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">7.4.&nbsp;Combining Queries (<code class="literal">UNION</code>, <code class="literal">INTERSECT</code>, <code class="literal">EXCEPT</code>) <a href="#QUERIES-UNION" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div><a id="id-1.5.6.8.2" class="indexterm" name="id-1.5.6.8.2"></a><a id="id-1.5.6.8.3" class="indexterm" name="id-1.5.6.8.3"></a><a id="id-1.5.6.8.4" class="indexterm" name="id-1.5.6.8.4"></a><a id="id-1.5.6.8.5" class="indexterm" name="id-1.5.6.8.5"></a><a id="id-1.5.6.8.6" class="indexterm" name="id-1.5.6.8.6"></a><a id="id-1.5.6.8.7" class="indexterm" name="id-1.5.6.8.7"></a><a id="id-1.5.6.8.8" class="indexterm" name="id-1.5.6.8.8"></a>
+  <p>The results of two queries can be combined using the set operations union, intersection, and difference. The syntax is</p>
+  <pre class="synopsis">
+<em class="replaceable"><code>query1</code></em> UNION [<span class="optional">ALL</span>] <em class="replaceable"><code>query2</code></em>
+<em class="replaceable"><code>query1</code></em> INTERSECT [<span class="optional">ALL</span>] <em class="replaceable"><code>query2</code></em>
+<em class="replaceable"><code>query1</code></em> EXCEPT [<span class="optional">ALL</span>] <em class="replaceable"><code>query2</code></em>
+</pre>
+  <p>where <em class="replaceable"><code>query1</code></em> and <em class="replaceable"><code>query2</code></em> are queries that can use any of the features discussed up to this point.</p>
+  <p><code class="literal">UNION</code> effectively appends the result of <em class="replaceable"><code>query2</code></em> to the result of <em class="replaceable"><code>query1</code></em> (although there is no guarantee that this is the order in which the rows are actually returned). Furthermore, it eliminates duplicate rows from its result, in the same way as <code class="literal">DISTINCT</code>, unless <code class="literal">UNION ALL</code> is used.</p>
+  <p><code class="literal">INTERSECT</code> returns all rows that are both in the result of <em class="replaceable"><code>query1</code></em> and in the result of <em class="replaceable"><code>query2</code></em>. Duplicate rows are eliminated unless <code class="literal">INTERSECT ALL</code> is used.</p>
+  <p><code class="literal">EXCEPT</code> returns all rows that are in the result of <em class="replaceable"><code>query1</code></em> but not in the result of <em class="replaceable"><code>query2</code></em>. (This is sometimes called the <em class="firstterm">difference</em> between two queries.) Again, duplicates are eliminated unless <code class="literal">EXCEPT ALL</code> is used.</p>
+  <p>In order to calculate the union, intersection, or difference of two queries, the two queries must be <span class="quote">“<span class="quote">union compatible</span>”</span>, which means that they return the same number of columns and the corresponding columns have compatible data types, as described in <a class="xref" href="typeconv-union-case.html" title="10.5.&nbsp;UNION, CASE, and Related Constructs">Section&nbsp;10.5</a>.</p>
+  <p>Set operations can be combined, for example</p>
+  <pre class="synopsis">
+<em class="replaceable"><code>query1</code></em> UNION <em class="replaceable"><code>query2</code></em> EXCEPT <em class="replaceable"><code>query3</code></em>
+</pre>
+  <p>which is equivalent to</p>
+  <pre class="synopsis">
+(<em class="replaceable"><code>query1</code></em> UNION <em class="replaceable"><code>query2</code></em>) EXCEPT <em class="replaceable"><code>query3</code></em>
+</pre>
+  <p>As shown here, you can use parentheses to control the order of evaluation. Without parentheses, <code class="literal">UNION</code> and <code class="literal">EXCEPT</code> associate left-to-right, but <code class="literal">INTERSECT</code> binds more tightly than those two operators. Thus</p>
+  <pre class="synopsis">
+<em class="replaceable"><code>query1</code></em> UNION <em class="replaceable"><code>query2</code></em> INTERSECT <em class="replaceable"><code>query3</code></em>
+</pre>
+  <p>means</p>
+  <pre class="synopsis">
+<em class="replaceable"><code>query1</code></em> UNION (<em class="replaceable"><code>query2</code></em> INTERSECT <em class="replaceable"><code>query3</code></em>)
+</pre>
+  <p>You can also surround an individual <em class="replaceable"><code>query</code></em> with parentheses. This is important if the <em class="replaceable"><code>query</code></em> needs to use any of the clauses discussed in following sections, such as <code class="literal">LIMIT</code>. Without parentheses, you'll get a syntax error, or else the clause will be understood as applying to the output of the set operation rather than one of its inputs. For example,</p>
+  <pre class="synopsis">
+SELECT a FROM b UNION SELECT x FROM y LIMIT 10
+</pre>
+  <p>is accepted, but it means</p>
+  <pre class="synopsis">
+(SELECT a FROM b UNION SELECT x FROM y) LIMIT 10
+</pre>
+  <p>not</p>
+  <pre class="synopsis">
+SELECT a FROM b UNION (SELECT x FROM y LIMIT 10)
+</pre>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="queries-select-lists.html" title="7.3.&nbsp;Select Lists">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="queries.html" title="Chapter&nbsp;7.&nbsp;Queries">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="queries-order.html" title="7.5.&nbsp;Sorting Rows (ORDER BY)">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">7.3.&nbsp;Select Lists&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;7.5.&nbsp;Sorting Rows (<code class="literal">ORDER BY</code>)</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/queries-union.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

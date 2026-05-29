@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 30.1. What Is JIT compilation?</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/jit-reason.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="30.1. What Is JIT compilation?" />
+  <meta property="og:description" content="30.1.&amp;nbsp;What Is JIT compilation? # 30.1.1. JIT Accelerated Operations 30.1.2. Inlining 30.1.3. Optimization Just-in-Time (JIT) compilation is the process of …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/jit-reason.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/jit-reason.html" title="PostgreSQL 18 - 30.1. What Is JIT compilation?" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/jit-reason.html" title="PostgreSQL 18 - 30.1. What Is JIT compilation?" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/jit-reason.html" title="PostgreSQL 17 - 30.1. What Is JIT compilation?" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/jit-reason.html" title="PostgreSQL 16 - 30.1. What Is JIT compilation?" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/jit-reason.html" title="PostgreSQL 15 - 30.1. What Is JIT compilation?" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/jit-reason.html" title="PostgreSQL 14 - 30.1. What Is JIT compilation?" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/jit-reason.html" title="PostgreSQL devel - 30.1. What Is JIT compilation?"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/jit-reason.html" title="PostgreSQL 13 - 30.1. What Is JIT compilation?"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/jit-reason.html" title="PostgreSQL 12 - 30.1. What Is JIT compilation?"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/jit-reason.html" title="PostgreSQL 11 - 30.1. What Is JIT compilation?"  rel="nofollow">11</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">30.1.&nbsp;What Is <acronym class="acronym">JIT</acronym> compilation?</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="jit.html" title="Chapter&nbsp;30.&nbsp;Just-in-Time Compilation (JIT)">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="jit.html" title="Chapter&nbsp;30.&nbsp;Just-in-Time Compilation (JIT)">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;30.&nbsp;Just-in-Time Compilation (<acronym class="acronym">JIT</acronym>)</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="jit-decision.html" title="30.2.&nbsp;When to JIT?">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="JIT-REASON">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">30.1.&nbsp;What Is <acronym class="acronym">JIT</acronym> compilation? <a href="#JIT-REASON" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <div class="toc">
+    <dl class="toc">
+      <dt><span class="sect2"><a href="jit-reason.html#JIT-ACCELERATED-OPERATIONS">30.1.1. <acronym class="acronym">JIT</acronym> Accelerated Operations</a></span></dt>
+      <dt><span class="sect2"><a href="jit-reason.html#JIT-INLINING">30.1.2. Inlining</a></span></dt>
+      <dt><span class="sect2"><a href="jit-reason.html#JIT-OPTIMIZATION">30.1.3. Optimization</a></span></dt>
+    </dl>
+  </div>
+  <p>Just-in-Time (<acronym class="acronym">JIT</acronym>) compilation is the process of turning some form of interpreted program evaluation into a native program, and doing so at run time. For example, instead of using general-purpose code that can evaluate arbitrary SQL expressions to evaluate a particular SQL predicate like <code class="literal">WHERE a.col = 3</code>, it is possible to generate a function that is specific to that expression and can be natively executed by the CPU, yielding a speedup.</p>
+  <p><span class="productname">PostgreSQL</span> has builtin support to perform <acronym class="acronym">JIT</acronym> compilation using <a class="ulink" href="https://llvm.org/" target="_top"><span class="productname">LLVM</span></a> when <span class="productname">PostgreSQL</span> is built with <a class="link" href="install-make.html#CONFIGURE-WITH-LLVM"><code class="literal">--with-llvm</code></a>.</p>
+  <p>See <code class="filename">src/backend/jit/README</code> for further details.</p>
+  <div class="sect2" id="JIT-ACCELERATED-OPERATIONS">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">30.1.1.&nbsp;<acronym class="acronym">JIT</acronym> Accelerated Operations <a href="#JIT-ACCELERATED-OPERATIONS" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>Currently <span class="productname">PostgreSQL</span>'s <acronym class="acronym">JIT</acronym> implementation has support for accelerating expression evaluation and tuple deforming. Several other operations could be accelerated in the future.</p>
+    <p>Expression evaluation is used to evaluate <code class="literal">WHERE</code> clauses, target lists, aggregates and projections. It can be accelerated by generating code specific to each case.</p>
+    <p>Tuple deforming is the process of transforming an on-disk tuple (see <a class="xref" href="storage-page-layout.html#STORAGE-TUPLE-LAYOUT" title="66.6.1.&nbsp;Table Row Layout">Section&nbsp;66.6.1</a>) into its in-memory representation. It can be accelerated by creating a function specific to the table layout and the number of columns to be extracted.</p>
+  </div>
+  <div class="sect2" id="JIT-INLINING">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">30.1.2.&nbsp;Inlining <a href="#JIT-INLINING" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p><span class="productname">PostgreSQL</span> is very extensible and allows new data types, functions, operators and other database objects to be defined; see <a class="xref" href="extend.html" title="Chapter&nbsp;36.&nbsp;Extending SQL">Chapter&nbsp;36</a>. In fact the built-in objects are implemented using nearly the same mechanisms. This extensibility implies some overhead, for example due to function calls (see <a class="xref" href="xfunc.html" title="36.3.&nbsp;User-Defined Functions">Section&nbsp;36.3</a>). To reduce that overhead, <acronym class="acronym">JIT</acronym> compilation can inline the bodies of small functions into the expressions using them. That allows a significant percentage of the overhead to be optimized away.</p>
+  </div>
+  <div class="sect2" id="JIT-OPTIMIZATION">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">30.1.3.&nbsp;Optimization <a href="#JIT-OPTIMIZATION" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p><span class="productname">LLVM</span> has support for optimizing generated code. Some of the optimizations are cheap enough to be performed whenever <acronym class="acronym">JIT</acronym> is used, while others are only beneficial for longer-running queries. See <a class="ulink" href="https://llvm.org/docs/Passes.html#transform-passes" target="_top">https://llvm.org/docs/Passes.html#transform-passes</a> for more details about optimizations.</p>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="jit.html" title="Chapter&nbsp;30.&nbsp;Just-in-Time Compilation (JIT)">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="jit.html" title="Chapter&nbsp;30.&nbsp;Just-in-Time Compilation (JIT)">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="jit-decision.html" title="30.2.&nbsp;When to JIT?">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">Chapter&nbsp;30.&nbsp;Just-in-Time Compilation (<acronym class="acronym">JIT</acronym>)&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;30.2.&nbsp;When to <acronym class="acronym">JIT</acronym>?</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/jit-reason.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

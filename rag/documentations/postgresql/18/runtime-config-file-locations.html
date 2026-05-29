@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 19.2. File Locations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/runtime-config-file-locations.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="19.2. File Locations" />
+  <meta property="og:description" content="19.2.&amp;nbsp;File Locations # In addition to the postgresql.conf file already mentioned, PostgreSQL uses two other manually-edited configuration files, which control …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/runtime-config-file-locations.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/runtime-config-file-locations.html" title="PostgreSQL 18 - 19.2. File Locations" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/runtime-config-file-locations.html" title="PostgreSQL 18 - 19.2. File Locations" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/runtime-config-file-locations.html" title="PostgreSQL 17 - 19.2. File Locations" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/runtime-config-file-locations.html" title="PostgreSQL 16 - 19.2. File Locations" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/runtime-config-file-locations.html" title="PostgreSQL 15 - 19.2. File Locations" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/runtime-config-file-locations.html" title="PostgreSQL 14 - 19.2. File Locations" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/runtime-config-file-locations.html" title="PostgreSQL devel - 19.2. File Locations"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/runtime-config-file-locations.html" title="PostgreSQL 13 - 19.2. File Locations"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/runtime-config-file-locations.html" title="PostgreSQL 12 - 19.2. File Locations"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/runtime-config-file-locations.html" title="PostgreSQL 11 - 19.2. File Locations"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/runtime-config-file-locations.html" title="PostgreSQL 10 - 19.2. File Locations"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/runtime-config-file-locations.html" title="PostgreSQL 9.6 - 19.2. File Locations"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/runtime-config-file-locations.html" title="PostgreSQL 9.5 - 19.2. File Locations"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/runtime-config-file-locations.html" title="PostgreSQL 9.4 - 19.2. File Locations"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/runtime-config-file-locations.html" title="PostgreSQL 9.3 - 19.2. File Locations"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/runtime-config-file-locations.html" title="PostgreSQL 9.2 - 19.2. File Locations"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/runtime-config-file-locations.html" title="PostgreSQL 9.1 - 19.2. File Locations"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/runtime-config-file-locations.html" title="PostgreSQL 9.0 - 19.2. File Locations"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/runtime-config-file-locations.html" title="PostgreSQL 8.4 - 19.2. File Locations"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/runtime-config-file-locations.html" title="PostgreSQL 8.3 - 19.2. File Locations"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/runtime-config-file-locations.html" title="PostgreSQL 8.2 - 19.2. File Locations"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/runtime-config-file-locations.html" title="PostgreSQL 8.1 - 19.2. File Locations"  rel="nofollow">8.1</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">19.2.&nbsp;File Locations</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="config-setting.html" title="19.1.&nbsp;Setting Parameters">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="runtime-config.html" title="Chapter&nbsp;19.&nbsp;Server Configuration">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;19.&nbsp;Server Configuration</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="runtime-config-connection.html" title="19.3.&nbsp;Connections and Authentication">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="RUNTIME-CONFIG-FILE-LOCATIONS">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">19.2.&nbsp;File Locations <a href="#RUNTIME-CONFIG-FILE-LOCATIONS" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <p>In addition to the <code class="filename">postgresql.conf</code> file already mentioned, <span class="productname">PostgreSQL</span> uses two other manually-edited configuration files, which control client authentication (their use is discussed in <a class="xref" href="client-authentication.html" title="Chapter&nbsp;20.&nbsp;Client Authentication">Chapter&nbsp;20</a>). By default, all three configuration files are stored in the database cluster's data directory. The parameters described in this section allow the configuration files to be placed elsewhere. (Doing so can ease administration. In particular it is often easier to ensure that the configuration files are properly backed-up when they are kept separate.)</p>
+  <div class="variablelist">
+    <dl class="variablelist">
+      <dt id="GUC-DATA-DIRECTORY"><span class="term"><code class="varname">data_directory</code> (<code class="type">string</code>) <a id="id-1.6.6.5.3.1.1.3" class="indexterm" name="id-1.6.6.5.3.1.1.3"></a></span> <a href="#GUC-DATA-DIRECTORY" class="id_link">#</a></dt>
+      <dd>
+        <p>Specifies the directory to use for data storage. This parameter can only be set at server start.</p>
+      </dd>
+      <dt id="GUC-CONFIG-FILE"><span class="term"><code class="varname">config_file</code> (<code class="type">string</code>) <a id="id-1.6.6.5.3.2.1.3" class="indexterm" name="id-1.6.6.5.3.2.1.3"></a></span> <a href="#GUC-CONFIG-FILE" class="id_link">#</a></dt>
+      <dd>
+        <p>Specifies the main server configuration file (customarily called <code class="filename">postgresql.conf</code>). This parameter can only be set on the <code class="command">postgres</code> command line.</p>
+      </dd>
+      <dt id="GUC-HBA-FILE"><span class="term"><code class="varname">hba_file</code> (<code class="type">string</code>) <a id="id-1.6.6.5.3.3.1.3" class="indexterm" name="id-1.6.6.5.3.3.1.3"></a></span> <a href="#GUC-HBA-FILE" class="id_link">#</a></dt>
+      <dd>
+        <p>Specifies the configuration file for host-based authentication (customarily called <code class="filename">pg_hba.conf</code>). This parameter can only be set at server start.</p>
+      </dd>
+      <dt id="GUC-IDENT-FILE"><span class="term"><code class="varname">ident_file</code> (<code class="type">string</code>) <a id="id-1.6.6.5.3.4.1.3" class="indexterm" name="id-1.6.6.5.3.4.1.3"></a></span> <a href="#GUC-IDENT-FILE" class="id_link">#</a></dt>
+      <dd>
+        <p>Specifies the configuration file for user name mapping (customarily called <code class="filename">pg_ident.conf</code>). This parameter can only be set at server start. See also <a class="xref" href="auth-username-maps.html" title="20.2.&nbsp;User Name Maps">Section&nbsp;20.2</a>.</p>
+      </dd>
+      <dt id="GUC-EXTERNAL-PID-FILE"><span class="term"><code class="varname">external_pid_file</code> (<code class="type">string</code>) <a id="id-1.6.6.5.3.5.1.3" class="indexterm" name="id-1.6.6.5.3.5.1.3"></a></span> <a href="#GUC-EXTERNAL-PID-FILE" class="id_link">#</a></dt>
+      <dd>
+        <p>Specifies the name of an additional process-ID (PID) file that the server should create for use by server administration programs. This parameter can only be set at server start.</p>
+      </dd>
+    </dl>
+  </div>
+  <p>In a default installation, none of the above parameters are set explicitly. Instead, the data directory is specified by the <code class="option">-D</code> command-line option or the <code class="envar">PGDATA</code> environment variable, and the configuration files are all found within the data directory.</p>
+  <p>If you wish to keep the configuration files elsewhere than the data directory, the <code class="command">postgres</code> <code class="option">-D</code> command-line option or <code class="envar">PGDATA</code> environment variable must point to the directory containing the configuration files, and the <code class="varname">data_directory</code> parameter must be set in <code class="filename">postgresql.conf</code> (or on the command line) to show where the data directory is actually located. Notice that <code class="varname">data_directory</code> overrides <code class="option">-D</code> and <code class="envar">PGDATA</code> for the location of the data directory, but not for the location of the configuration files.</p>
+  <p>If you wish, you can specify the configuration file names and locations individually using the parameters <code class="varname">config_file</code>, <code class="varname">hba_file</code> and/or <code class="varname">ident_file</code>. <code class="varname">config_file</code> can only be specified on the <code class="command">postgres</code> command line, but the others can be set within the main configuration file. If all three parameters plus <code class="varname">data_directory</code> are explicitly set, then it is not necessary to specify <code class="option">-D</code> or <code class="envar">PGDATA</code>.</p>
+  <p>When setting any of these parameters, a relative path will be interpreted with respect to the directory in which <code class="command">postgres</code> is started.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="config-setting.html" title="19.1.&nbsp;Setting Parameters">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="runtime-config.html" title="Chapter&nbsp;19.&nbsp;Server Configuration">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="runtime-config-connection.html" title="19.3.&nbsp;Connections and Authentication">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">19.1.&nbsp;Setting Parameters&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;19.3.&nbsp;Connections and Authentication</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/runtime-config-file-locations.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

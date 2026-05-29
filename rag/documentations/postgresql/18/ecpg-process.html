@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 34.10. Processing Embedded SQL Programs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/ecpg-process.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="34.10. Processing Embedded SQL Programs" />
+  <meta property="og:description" content="34.10.&amp;nbsp;Processing Embedded SQL Programs # Now that you have an idea how to form embedded SQL C programs, you probably …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/ecpg-process.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/ecpg-process.html" title="PostgreSQL 18 - 34.10. Processing Embedded SQL Programs" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/ecpg-process.html" title="PostgreSQL 18 - 34.10. Processing Embedded SQL Programs" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/ecpg-process.html" title="PostgreSQL 17 - 34.10. Processing Embedded SQL Programs" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/ecpg-process.html" title="PostgreSQL 16 - 34.10. Processing Embedded SQL Programs" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/ecpg-process.html" title="PostgreSQL 15 - 34.10. Processing Embedded SQL Programs" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/ecpg-process.html" title="PostgreSQL 14 - 34.10. Processing Embedded SQL Programs" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/ecpg-process.html" title="PostgreSQL devel - 34.10. Processing Embedded SQL Programs"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/ecpg-process.html" title="PostgreSQL 13 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/ecpg-process.html" title="PostgreSQL 12 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/ecpg-process.html" title="PostgreSQL 11 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/ecpg-process.html" title="PostgreSQL 10 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/ecpg-process.html" title="PostgreSQL 9.6 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/ecpg-process.html" title="PostgreSQL 9.5 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/ecpg-process.html" title="PostgreSQL 9.4 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/ecpg-process.html" title="PostgreSQL 9.3 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/ecpg-process.html" title="PostgreSQL 9.2 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/ecpg-process.html" title="PostgreSQL 9.1 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/ecpg-process.html" title="PostgreSQL 9.0 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/ecpg-process.html" title="PostgreSQL 8.4 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/ecpg-process.html" title="PostgreSQL 8.3 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/ecpg-process.html" title="PostgreSQL 8.2 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/ecpg-process.html" title="PostgreSQL 8.1 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/ecpg-process.html" title="PostgreSQL 8.0 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/ecpg-process.html" title="PostgreSQL 7.4 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/ecpg-process.html" title="PostgreSQL 7.3 - 34.10. Processing Embedded SQL Programs"  rel="nofollow">7.3</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">34.10.&nbsp;Processing Embedded SQL Programs</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="ecpg-preproc.html" title="34.9.&nbsp;Preprocessor Directives">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter&nbsp;34.&nbsp;ECPG — Embedded SQL in C">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;34.&nbsp;<span class="application">ECPG</span> — Embedded <acronym class="acronym">SQL</acronym> in C</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="ecpg-library.html" title="34.11.&nbsp;Library Functions">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="ECPG-PROCESS">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">34.10.&nbsp;Processing Embedded SQL Programs <a href="#ECPG-PROCESS" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <p>Now that you have an idea how to form embedded SQL C programs, you probably want to know how to compile them. Before compiling you run the file through the embedded <acronym class="acronym">SQL</acronym> <acronym class="acronym">C</acronym> preprocessor, which converts the <acronym class="acronym">SQL</acronym> statements you used to special function calls. After compiling, you must link with a special library that contains the needed functions. These functions fetch information from the arguments, perform the <acronym class="acronym">SQL</acronym> command using the <span class="application">libpq</span> interface, and put the result in the arguments specified for output.</p>
+  <p>The preprocessor program is called <code class="filename">ecpg</code> and is included in a normal <span class="productname">PostgreSQL</span> installation. Embedded SQL programs are typically named with an extension <code class="filename">.pgc</code>. If you have a program file called <code class="filename">prog1.pgc</code>, you can preprocess it by simply calling:</p>
+  <pre class="programlisting">
+ecpg prog1.pgc
+</pre>
+  <p>This will create a file called <code class="filename">prog1.c</code>. If your input files do not follow the suggested naming pattern, you can specify the output file explicitly using the <code class="option">-o</code> option.</p>
+  <p>The preprocessed file can be compiled normally, for example:</p>
+  <pre class="programlisting">
+cc -c prog1.c
+</pre>
+  <p>The generated C source files include header files from the <span class="productname">PostgreSQL</span> installation, so if you installed <span class="productname">PostgreSQL</span> in a location that is not searched by default, you have to add an option such as <code class="literal">-I/usr/local/pgsql/include</code> to the compilation command line.</p>
+  <p>To link an embedded SQL program, you need to include the <code class="filename">libecpg</code> library, like so:</p>
+  <pre class="programlisting">
+cc -o myprog prog1.o prog2.o ... -lecpg
+</pre>
+  <p>Again, you might have to add an option like <code class="literal">-L/usr/local/pgsql/lib</code> to that command line.</p>
+  <p>You can use <code class="command">pg_config</code><a id="id-1.7.5.16.6.2" class="indexterm" name="id-1.7.5.16.6.2"></a> or <code class="command">pkg-config</code><a id="id-1.7.5.16.6.4" class="indexterm" name="id-1.7.5.16.6.4"></a> with package name <code class="literal">libecpg</code> to get the paths for your installation.</p>
+  <p>If you manage the build process of a larger project using <span class="application">make</span>, it might be convenient to include the following implicit rule to your makefiles:</p>
+  <pre class="programlisting">
+ECPG = ecpg
+
+%.c: %.pgc
+        $(ECPG) $&lt;
+</pre>
+  <p>The complete syntax of the <code class="command">ecpg</code> command is detailed in <a class="xref" href="app-ecpg.html" title="ecpg"><span class="refentrytitle"><span class="application">ecpg</span></span></a>.</p>
+  <p>The <span class="application">ecpg</span> library is thread-safe by default. However, you might need to use some threading command-line options to compile your client code.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="ecpg-preproc.html" title="34.9.&nbsp;Preprocessor Directives">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter&nbsp;34.&nbsp;ECPG — Embedded SQL in C">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="ecpg-library.html" title="34.11.&nbsp;Library Functions">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">34.9.&nbsp;Preprocessor Directives&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;34.11.&nbsp;Library Functions</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/ecpg-process.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

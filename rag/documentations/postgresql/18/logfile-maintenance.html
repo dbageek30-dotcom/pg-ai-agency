@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 24.3. Log File Maintenance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/logfile-maintenance.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="24.3. Log File Maintenance" />
+  <meta property="og:description" content="24.3.&amp;nbsp;Log File Maintenance # It is a good idea to save the database server&#x27;s log output somewhere, rather than just …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/logfile-maintenance.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/logfile-maintenance.html" title="PostgreSQL 18 - 24.3. Log File Maintenance" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/logfile-maintenance.html" title="PostgreSQL 18 - 24.3. Log File Maintenance" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/logfile-maintenance.html" title="PostgreSQL 17 - 24.3. Log File Maintenance" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/logfile-maintenance.html" title="PostgreSQL 16 - 24.3. Log File Maintenance" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/logfile-maintenance.html" title="PostgreSQL 15 - 24.3. Log File Maintenance" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/logfile-maintenance.html" title="PostgreSQL 14 - 24.3. Log File Maintenance" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/logfile-maintenance.html" title="PostgreSQL devel - 24.3. Log File Maintenance"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/logfile-maintenance.html" title="PostgreSQL 13 - 24.3. Log File Maintenance"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/logfile-maintenance.html" title="PostgreSQL 12 - 24.3. Log File Maintenance"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/logfile-maintenance.html" title="PostgreSQL 11 - 24.3. Log File Maintenance"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/logfile-maintenance.html" title="PostgreSQL 10 - 24.3. Log File Maintenance"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/logfile-maintenance.html" title="PostgreSQL 9.6 - 24.3. Log File Maintenance"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/logfile-maintenance.html" title="PostgreSQL 9.5 - 24.3. Log File Maintenance"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/logfile-maintenance.html" title="PostgreSQL 9.4 - 24.3. Log File Maintenance"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/logfile-maintenance.html" title="PostgreSQL 9.3 - 24.3. Log File Maintenance"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/logfile-maintenance.html" title="PostgreSQL 9.2 - 24.3. Log File Maintenance"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/logfile-maintenance.html" title="PostgreSQL 9.1 - 24.3. Log File Maintenance"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/logfile-maintenance.html" title="PostgreSQL 9.0 - 24.3. Log File Maintenance"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/logfile-maintenance.html" title="PostgreSQL 8.4 - 24.3. Log File Maintenance"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/logfile-maintenance.html" title="PostgreSQL 8.3 - 24.3. Log File Maintenance"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/logfile-maintenance.html" title="PostgreSQL 8.2 - 24.3. Log File Maintenance"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/logfile-maintenance.html" title="PostgreSQL 8.1 - 24.3. Log File Maintenance"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/logfile-maintenance.html" title="PostgreSQL 8.0 - 24.3. Log File Maintenance"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/logfile-maintenance.html" title="PostgreSQL 7.4 - 24.3. Log File Maintenance"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/logfile-maintenance.html" title="PostgreSQL 7.3 - 24.3. Log File Maintenance"  rel="nofollow">7.3</a>
+                    
+                       / 
+                      <a href="/docs/7.2/logfile-maintenance.html" title="PostgreSQL 7.2 - 24.3. Log File Maintenance"  rel="nofollow">7.2</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">24.3.&nbsp;Log File Maintenance</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="routine-reindex.html" title="24.2.&nbsp;Routine Reindexing">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="maintenance.html" title="Chapter&nbsp;24.&nbsp;Routine Database Maintenance Tasks">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;24.&nbsp;Routine Database Maintenance Tasks</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="backup.html" title="Chapter&nbsp;25.&nbsp;Backup and Restore">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="LOGFILE-MAINTENANCE">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">24.3.&nbsp;Log File Maintenance <a href="#LOGFILE-MAINTENANCE" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div><a id="id-1.6.11.12.2" class="indexterm" name="id-1.6.11.12.2"></a>
+  <p>It is a good idea to save the database server's log output somewhere, rather than just discarding it via <code class="filename">/dev/null</code>. The log output is invaluable when diagnosing problems.</p>
+  <div class="note">
+    <h3 class="title">Note</h3>
+    <p>The server log can contain sensitive information and needs to be protected, no matter how or where it is stored, or the destination to which it is routed. For example, some DDL statements might contain plaintext passwords or other authentication details. Logged statements at the <code class="literal">ERROR</code> level might show the SQL source code for applications and might also contain some parts of data rows. Recording data, events and related information is the intended function of this facility, so this is not a leakage or a bug. Please ensure the server logs are visible only to appropriately authorized people.</p>
+  </div>
+  <p>Log output tends to be voluminous (especially at higher debug levels) so you won't want to save it indefinitely. You need to <span class="emphasis"><em>rotate</em></span> the log files so that new log files are started and old ones removed after a reasonable period of time.</p>
+  <p>If you simply direct the <span class="systemitem">stderr</span> of <code class="command">postgres</code> into a file, you will have log output, but the only way to truncate the log file is to stop and restart the server. This might be acceptable if you are using <span class="productname">PostgreSQL</span> in a development environment, but few production servers would find this behavior acceptable.</p>
+  <p>A better approach is to send the server's <span class="systemitem">stderr</span> output to some type of log rotation program. There is a built-in log rotation facility, which you can use by setting the configuration parameter <code class="varname">logging_collector</code> to <code class="literal">true</code> in <code class="filename">postgresql.conf</code>. The control parameters for this program are described in <a class="xref" href="runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHERE" title="19.8.1.&nbsp;Where to Log">Section&nbsp;19.8.1</a>. You can also use this approach to capture the log data in machine readable <acronym class="acronym">CSV</acronym> (comma-separated values) format.</p>
+  <p>Alternatively, you might prefer to use an external log rotation program if you have one that you are already using with other server software. For example, the <span class="application">rotatelogs</span> tool included in the <span class="productname">Apache</span> distribution can be used with <span class="productname">PostgreSQL</span>. One way to do this is to pipe the server's <span class="systemitem">stderr</span> output to the desired program. If you start the server with <code class="command">pg_ctl</code>, then <span class="systemitem">stderr</span> is already redirected to <span class="systemitem">stdout</span>, so you just need a pipe command, for example:</p>
+  <pre class="programlisting">
+pg_ctl start | rotatelogs /var/log/pgsql_log 86400
+</pre>
+  <p>You can combine these approaches by setting up <span class="application">logrotate</span> to collect log files produced by <span class="productname">PostgreSQL</span> built-in logging collector. In this case, the logging collector defines the names and location of the log files, while <span class="application">logrotate</span> periodically archives these files. When initiating log rotation, <span class="application">logrotate</span> must ensure that the application sends further output to the new file. This is commonly done with a <code class="literal">postrotate</code> script that sends a <code class="literal">SIGHUP</code> signal to the application, which then reopens the log file. In <span class="productname">PostgreSQL</span>, you can run <code class="command">pg_ctl</code> with the <code class="literal">logrotate</code> option instead. When the server receives this command, the server either switches to a new log file or reopens the existing file, depending on the logging configuration (see <a class="xref" href="runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHERE" title="19.8.1.&nbsp;Where to Log">Section&nbsp;19.8.1</a>).</p>
+  <div class="note">
+    <h3 class="title">Note</h3>
+    <p>When using static log file names, the server might fail to reopen the log file if the max open file limit is reached or a file table overflow occurs. In this case, log messages are sent to the old log file until a successful log rotation. If <span class="application">logrotate</span> is configured to compress the log file and delete it, the server may lose the messages logged in this time frame. To avoid this issue, you can configure the logging collector to dynamically assign log file names and use a <code class="literal">prerotate</code> script to ignore open log files.</p>
+  </div>
+  <p>Another production-grade approach to managing log output is to send it to <span class="application">syslog</span> and let <span class="application">syslog</span> deal with file rotation. To do this, set the configuration parameter <code class="varname">log_destination</code> to <code class="literal">syslog</code> (to log to <span class="application">syslog</span> only) in <code class="filename">postgresql.conf</code>. Then you can send a <code class="literal">SIGHUP</code> signal to the <span class="application">syslog</span> daemon whenever you want to force it to start writing a new log file. If you want to automate log rotation, the <span class="application">logrotate</span> program can be configured to work with log files from <span class="application">syslog</span>.</p>
+  <p>On many systems, however, <span class="application">syslog</span> is not very reliable, particularly with large log messages; it might truncate or drop messages just when you need them the most. Also, on <span class="productname">Linux</span>, <span class="application">syslog</span> will flush each message to disk, yielding poor performance. (You can use a <span class="quote">“<span class="quote"><code class="literal">-</code></span>”</span> at the start of the file name in the <span class="application">syslog</span> configuration file to disable syncing.)</p>
+  <p>Note that all the solutions described above take care of starting new log files at configurable intervals, but they do not handle deletion of old, no-longer-useful log files. You will probably want to set up a batch job to periodically delete old log files. Another possibility is to configure the rotation program so that old log files are overwritten cyclically.</p>
+  <p><a class="ulink" href="https://pgbadger.darold.net/" target="_top"><span class="productname">pgBadger</span></a> is an external project that does sophisticated log file analysis. <a class="ulink" href="https://bucardo.org/check_postgres/" target="_top"><span class="productname">check_postgres</span></a> provides Nagios alerts when important messages appear in the log files, as well as detection of many other extraordinary conditions.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="routine-reindex.html" title="24.2.&nbsp;Routine Reindexing">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="maintenance.html" title="Chapter&nbsp;24.&nbsp;Routine Database Maintenance Tasks">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="backup.html" title="Chapter&nbsp;25.&nbsp;Backup and Restore">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">24.2.&nbsp;Routine Reindexing&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;25.&nbsp;Backup and Restore</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/logfile-maintenance.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

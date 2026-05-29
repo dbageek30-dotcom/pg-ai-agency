@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 19.14. Error Handling</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/runtime-config-error-handling.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="19.14. Error Handling" />
+  <meta property="og:description" content="19.14.&amp;nbsp;Error Handling # exit_on_error (boolean) # If on, any error will terminate the current session. By default, this is set …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/runtime-config-error-handling.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/runtime-config-error-handling.html" title="PostgreSQL 18 - 19.14. Error Handling" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/runtime-config-error-handling.html" title="PostgreSQL 18 - 19.14. Error Handling" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/runtime-config-error-handling.html" title="PostgreSQL 17 - 19.14. Error Handling" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/runtime-config-error-handling.html" title="PostgreSQL 16 - 19.14. Error Handling" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/runtime-config-error-handling.html" title="PostgreSQL 15 - 19.14. Error Handling" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/runtime-config-error-handling.html" title="PostgreSQL 14 - 19.14. Error Handling" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/runtime-config-error-handling.html" title="PostgreSQL devel - 19.14. Error Handling"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/runtime-config-error-handling.html" title="PostgreSQL 13 - 19.14. Error Handling"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/runtime-config-error-handling.html" title="PostgreSQL 12 - 19.14. Error Handling"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/runtime-config-error-handling.html" title="PostgreSQL 11 - 19.14. Error Handling"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/runtime-config-error-handling.html" title="PostgreSQL 10 - 19.14. Error Handling"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/runtime-config-error-handling.html" title="PostgreSQL 9.6 - 19.14. Error Handling"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/runtime-config-error-handling.html" title="PostgreSQL 9.5 - 19.14. Error Handling"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/runtime-config-error-handling.html" title="PostgreSQL 9.4 - 19.14. Error Handling"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/runtime-config-error-handling.html" title="PostgreSQL 9.3 - 19.14. Error Handling"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/runtime-config-error-handling.html" title="PostgreSQL 9.2 - 19.14. Error Handling"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/runtime-config-error-handling.html" title="PostgreSQL 9.1 - 19.14. Error Handling"  rel="nofollow">9.1</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">19.14.&nbsp;Error Handling</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="runtime-config-compatible.html" title="19.13.&nbsp;Version and Platform Compatibility">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="runtime-config.html" title="Chapter&nbsp;19.&nbsp;Server Configuration">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;19.&nbsp;Server Configuration</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="runtime-config-preset.html" title="19.15.&nbsp;Preset Options">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="RUNTIME-CONFIG-ERROR-HANDLING">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">19.14.&nbsp;Error Handling <a href="#RUNTIME-CONFIG-ERROR-HANDLING" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <div class="variablelist">
+    <dl class="variablelist">
+      <dt id="GUC-EXIT-ON-ERROR"><span class="term"><code class="varname">exit_on_error</code> (<code class="type">boolean</code>) <a id="id-1.6.6.17.2.1.1.3" class="indexterm" name="id-1.6.6.17.2.1.1.3"></a></span> <a href="#GUC-EXIT-ON-ERROR" class="id_link">#</a></dt>
+      <dd>
+        <p>If on, any error will terminate the current session. By default, this is set to off, so that only FATAL errors will terminate the session.</p>
+      </dd>
+      <dt id="GUC-RESTART-AFTER-CRASH"><span class="term"><code class="varname">restart_after_crash</code> (<code class="type">boolean</code>) <a id="id-1.6.6.17.2.2.1.3" class="indexterm" name="id-1.6.6.17.2.2.1.3"></a></span> <a href="#GUC-RESTART-AFTER-CRASH" class="id_link">#</a></dt>
+      <dd>
+        <p>When set to on, which is the default, <span class="productname">PostgreSQL</span> will automatically reinitialize after a backend crash. Leaving this value set to on is normally the best way to maximize the availability of the database. However, in some circumstances, such as when <span class="productname">PostgreSQL</span> is being invoked by clusterware, it may be useful to disable the restart so that the clusterware can gain control and take any actions it deems appropriate.</p>
+        <p>This parameter can only be set in the <code class="filename">postgresql.conf</code> file or on the server command line.</p>
+      </dd>
+      <dt id="GUC-DATA-SYNC-RETRY"><span class="term"><code class="varname">data_sync_retry</code> (<code class="type">boolean</code>) <a id="id-1.6.6.17.2.3.1.3" class="indexterm" name="id-1.6.6.17.2.3.1.3"></a></span> <a href="#GUC-DATA-SYNC-RETRY" class="id_link">#</a></dt>
+      <dd>
+        <p>When set to off, which is the default, <span class="productname">PostgreSQL</span> will raise a PANIC-level error on failure to flush modified data files to the file system. This causes the database server to crash. This parameter can only be set at server start.</p>
+        <p>On some operating systems, the status of data in the kernel's page cache is unknown after a write-back failure. In some cases it might have been entirely forgotten, making it unsafe to retry; the second attempt may be reported as successful, when in fact the data has been lost. In these circumstances, the only way to avoid data loss is to recover from the WAL after any failure is reported, preferably after investigating the root cause of the failure and replacing any faulty hardware.</p>
+        <p>If set to on, <span class="productname">PostgreSQL</span> will instead report an error but continue to run so that the data flushing operation can be retried in a later checkpoint. Only set it to on after investigating the operating system's treatment of buffered data in case of write-back failure.</p>
+      </dd>
+      <dt id="GUC-RECOVERY-INIT-SYNC-METHOD"><span class="term"><code class="varname">recovery_init_sync_method</code> (<code class="type">enum</code>) <a id="id-1.6.6.17.2.4.1.3" class="indexterm" name="id-1.6.6.17.2.4.1.3"></a></span> <a href="#GUC-RECOVERY-INIT-SYNC-METHOD" class="id_link">#</a></dt>
+      <dd>
+        <p>When set to <code class="literal">fsync</code>, which is the default, <span class="productname">PostgreSQL</span> will recursively open and synchronize all files in the data directory before crash recovery begins. The search for files will follow symbolic links for the WAL directory and each configured tablespace (but not any other symbolic links). This is intended to make sure that all WAL and data files are durably stored on disk before replaying changes. This applies whenever starting a database cluster that did not shut down cleanly, including copies created with <span class="application">pg_basebackup</span>.</p>
+        <p>On Linux, <code class="literal">syncfs</code> may be used instead, to ask the operating system to synchronize the file systems that contain the data directory, the WAL files and each tablespace (but not any other file systems that may be reachable through symbolic links). This may be a lot faster than the <code class="literal">fsync</code> setting, because it doesn't need to open each file one by one. On the other hand, it may be slower if a file system is shared by other applications that modify a lot of files, since those files will also be written to disk. Furthermore, on versions of Linux before 5.8, I/O errors encountered while writing data to disk may not be reported to <span class="productname">PostgreSQL</span>, and relevant error messages may appear only in kernel logs.</p>
+        <p>This parameter can only be set in the <code class="filename">postgresql.conf</code> file or on the server command line.</p>
+      </dd>
+    </dl>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="runtime-config-compatible.html" title="19.13.&nbsp;Version and Platform Compatibility">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="runtime-config.html" title="Chapter&nbsp;19.&nbsp;Server Configuration">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="runtime-config-preset.html" title="19.15.&nbsp;Preset Options">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">19.13.&nbsp;Version and Platform Compatibility&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;19.15.&nbsp;Preset Options</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/runtime-config-error-handling.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

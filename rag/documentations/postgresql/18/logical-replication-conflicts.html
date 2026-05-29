@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 29.7. Conflicts</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/logical-replication-conflicts.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="29.7. Conflicts" />
+  <meta property="og:description" content="29.7.&amp;nbsp;Conflicts # Logical replication behaves similarly to normal DML operations in that the data will be updated even if it …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/logical-replication-conflicts.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/logical-replication-conflicts.html" title="PostgreSQL 18 - 29.7. Conflicts" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/logical-replication-conflicts.html" title="PostgreSQL 18 - 29.7. Conflicts" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/logical-replication-conflicts.html" title="PostgreSQL 17 - 29.7. Conflicts" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/logical-replication-conflicts.html" title="PostgreSQL 16 - 29.7. Conflicts" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/logical-replication-conflicts.html" title="PostgreSQL 15 - 29.7. Conflicts" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/logical-replication-conflicts.html" title="PostgreSQL 14 - 29.7. Conflicts" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/logical-replication-conflicts.html" title="PostgreSQL devel - 29.7. Conflicts"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/logical-replication-conflicts.html" title="PostgreSQL 13 - 29.7. Conflicts"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/logical-replication-conflicts.html" title="PostgreSQL 12 - 29.7. Conflicts"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/logical-replication-conflicts.html" title="PostgreSQL 11 - 29.7. Conflicts"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/logical-replication-conflicts.html" title="PostgreSQL 10 - 29.7. Conflicts"  rel="nofollow">10</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">29.7.&nbsp;Conflicts</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="logical-replication-gencols.html" title="29.6.&nbsp;Generated Column Replication">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="logical-replication.html" title="Chapter&nbsp;29.&nbsp;Logical Replication">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;29.&nbsp;Logical Replication</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="logical-replication-restrictions.html" title="29.8.&nbsp;Restrictions">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="LOGICAL-REPLICATION-CONFLICTS">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">29.7.&nbsp;Conflicts <a href="#LOGICAL-REPLICATION-CONFLICTS" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <p>Logical replication behaves similarly to normal DML operations in that the data will be updated even if it was changed locally on the subscriber node. If incoming data violates any constraints the replication will stop. This is referred to as a <em class="firstterm">conflict</em>. When replicating <code class="command">UPDATE</code> or <code class="command">DELETE</code> operations, missing data is also considered as a <em class="firstterm">conflict</em>, but does not result in an error and such operations will simply be skipped.</p>
+  <p>Additional logging is triggered, and the conflict statistics are collected (displayed in the <a class="link" href="monitoring-stats.html#MONITORING-PG-STAT-SUBSCRIPTION-STATS" title="27.2.9.&nbsp;pg_stat_subscription_stats"><code class="structname">pg_stat_subscription_stats</code></a> view) in the following <em class="firstterm">conflict</em> cases:</p>
+  <div class="variablelist">
+    <dl class="variablelist">
+      <dt id="CONFLICT-INSERT-EXISTS"><span class="term"><code class="literal">insert_exists</code></span> <a href="#CONFLICT-INSERT-EXISTS" class="id_link">#</a></dt>
+      <dd>
+        <p>Inserting a row that violates a <code class="literal">NOT DEFERRABLE</code> unique constraint. Note that to log the origin and commit timestamp details of the conflicting key, <a class="link" href="runtime-config-replication.html#GUC-TRACK-COMMIT-TIMESTAMP"><code class="varname">track_commit_timestamp</code></a> should be enabled on the subscriber. In this case, an error will be raised until the conflict is resolved manually.</p>
+      </dd>
+      <dt id="CONFLICT-UPDATE-ORIGIN-DIFFERS"><span class="term"><code class="literal">update_origin_differs</code></span> <a href="#CONFLICT-UPDATE-ORIGIN-DIFFERS" class="id_link">#</a></dt>
+      <dd>
+        <p>Updating a row that was previously modified by another origin. Note that this conflict can only be detected when <a class="link" href="runtime-config-replication.html#GUC-TRACK-COMMIT-TIMESTAMP"><code class="varname">track_commit_timestamp</code></a> is enabled on the subscriber. Currently, the update is always applied regardless of the origin of the local row.</p>
+      </dd>
+      <dt id="CONFLICT-UPDATE-EXISTS"><span class="term"><code class="literal">update_exists</code></span> <a href="#CONFLICT-UPDATE-EXISTS" class="id_link">#</a></dt>
+      <dd>
+        <p>The updated value of a row violates a <code class="literal">NOT DEFERRABLE</code> unique constraint. Note that to log the origin and commit timestamp details of the conflicting key, <a class="link" href="runtime-config-replication.html#GUC-TRACK-COMMIT-TIMESTAMP"><code class="varname">track_commit_timestamp</code></a> should be enabled on the subscriber. In this case, an error will be raised until the conflict is resolved manually. Note that when updating a partitioned table, if the updated row value satisfies another partition constraint resulting in the row being inserted into a new partition, the <code class="literal">insert_exists</code> conflict may arise if the new row violates a <code class="literal">NOT DEFERRABLE</code> unique constraint.</p>
+      </dd>
+      <dt id="CONFLICT-UPDATE-MISSING"><span class="term"><code class="literal">update_missing</code></span> <a href="#CONFLICT-UPDATE-MISSING" class="id_link">#</a></dt>
+      <dd>
+        <p>The row to be updated was not found. The update will simply be skipped in this scenario.</p>
+      </dd>
+      <dt id="CONFLICT-DELETE-ORIGIN-DIFFERS"><span class="term"><code class="literal">delete_origin_differs</code></span> <a href="#CONFLICT-DELETE-ORIGIN-DIFFERS" class="id_link">#</a></dt>
+      <dd>
+        <p>Deleting a row that was previously modified by another origin. Note that this conflict can only be detected when <a class="link" href="runtime-config-replication.html#GUC-TRACK-COMMIT-TIMESTAMP"><code class="varname">track_commit_timestamp</code></a> is enabled on the subscriber. Currently, the delete is always applied regardless of the origin of the local row.</p>
+      </dd>
+      <dt id="CONFLICT-DELETE-MISSING"><span class="term"><code class="literal">delete_missing</code></span> <a href="#CONFLICT-DELETE-MISSING" class="id_link">#</a></dt>
+      <dd>
+        <p>The row to be deleted was not found. The delete will simply be skipped in this scenario.</p>
+      </dd>
+      <dt id="CONFLICT-MULTIPLE-UNIQUE-CONFLICTS"><span class="term"><code class="literal">multiple_unique_conflicts</code></span> <a href="#CONFLICT-MULTIPLE-UNIQUE-CONFLICTS" class="id_link">#</a></dt>
+      <dd>
+        <p>Inserting or updating a row violates multiple <code class="literal">NOT DEFERRABLE</code> unique constraints. Note that to log the origin and commit timestamp details of conflicting keys, ensure that <a class="link" href="runtime-config-replication.html#GUC-TRACK-COMMIT-TIMESTAMP"><code class="varname">track_commit_timestamp</code></a> is enabled on the subscriber. In this case, an error will be raised until the conflict is resolved manually.</p>
+      </dd>
+    </dl>
+  </div>
+  <p>Note that there are other conflict scenarios, such as exclusion constraint violations. Currently, we do not provide additional details for them in the log.</p>
+  <p>The log format for logical replication conflicts is as follows:</p>
+  <pre class="synopsis">
+LOG:  conflict detected on relation "<em class="replaceable"><code>schemaname</code></em>.<em class="replaceable"><code>tablename</code></em>": conflict=<em class="replaceable"><code>conflict_type</code></em>
+DETAIL:  <em class="replaceable"><code>detailed_explanation</code></em>.
+{<em class="replaceable"><code>detail_values</code></em> [; ... ]}.
+
+<span class="phrase">where <em class="replaceable"><code>detail_values</code></em> is one of:</span>
+
+    <code class="literal">Key</code> (<em class="replaceable"><code>column_name</code></em> [<span class="optional">, ...</span>])=(<em class="replaceable"><code>column_value</code></em> [<span class="optional">, ...</span>])
+    <code class="literal">existing local row</code> [<span class="optional">(<em class="replaceable"><code>column_name</code></em> [<span class="optional">, ...</span>])=</span>](<em class="replaceable"><code>column_value</code></em> [<span class="optional">, ...</span>])
+    <code class="literal">remote row</code> [<span class="optional">(<em class="replaceable"><code>column_name</code></em> [<span class="optional">, ...</span>])=</span>](<em class="replaceable"><code>column_value</code></em> [<span class="optional">, ...</span>])
+    <code class="literal">replica identity</code> {(<em class="replaceable"><code>column_name</code></em> [<span class="optional">, ...</span>])=(<em class="replaceable"><code>column_value</code></em> [<span class="optional">, ...</span>]) | full [<span class="optional">(<em class="replaceable"><code>column_name</code></em> [<span class="optional">, ...</span>])=</span>](<em class="replaceable"><code>column_value</code></em> [<span class="optional">, ...</span>])}
+</pre>
+  <p>The log provides the following information:</p>
+  <div class="variablelist">
+    <dl class="variablelist">
+      <dt><span class="term"><code class="literal">LOG</code></span></dt>
+      <dd>
+        <div class="itemizedlist">
+          <ul class="itemizedlist" style="list-style-type: disc;">
+            <li class="listitem">
+              <p><em class="replaceable"><code>schemaname</code></em>.<em class="replaceable"><code>tablename</code></em> identifies the local relation involved in the conflict.</p>
+            </li>
+            <li class="listitem">
+              <p><em class="replaceable"><code>conflict_type</code></em> is the type of conflict that occurred (e.g., <code class="literal">insert_exists</code>, <code class="literal">update_exists</code>).</p>
+            </li>
+          </ul>
+        </div>
+      </dd>
+      <dt><span class="term"><code class="literal">DETAIL</code></span></dt>
+      <dd>
+        <div class="itemizedlist">
+          <ul class="itemizedlist" style="list-style-type: disc;">
+            <li class="listitem">
+              <p><em class="replaceable"><code>detailed_explanation</code></em> includes the origin, transaction ID, and commit timestamp of the transaction that modified the existing local row, if available.</p>
+            </li>
+            <li class="listitem">
+              <p>The <code class="literal">Key</code> section includes the key values of the local row that violated a unique constraint for <code class="literal">insert_exists</code>, <code class="literal">update_exists</code> or <code class="literal">multiple_unique_conflicts</code> conflicts.</p>
+            </li>
+            <li class="listitem">
+              <p>The <code class="literal">existing local row</code> section includes the local row if its origin differs from the remote row for <code class="literal">update_origin_differs</code> or <code class="literal">delete_origin_differs</code> conflicts, or if the key value conflicts with the remote row for <code class="literal">insert_exists</code>, <code class="literal">update_exists</code> or <code class="literal">multiple_unique_conflicts</code> conflicts.</p>
+            </li>
+            <li class="listitem">
+              <p>The <code class="literal">remote row</code> section includes the new row from the remote insert or update operation that caused the conflict. Note that for an update operation, the column value of the new row will be null if the value is unchanged and toasted.</p>
+            </li>
+            <li class="listitem">
+              <p>The <code class="literal">replica identity</code> section includes the replica identity key values that were used to search for the existing local row to be updated or deleted. This may include the full row value if the local relation is marked with <a class="link" href="sql-altertable.html#SQL-ALTERTABLE-REPLICA-IDENTITY-FULL"><code class="literal">REPLICA IDENTITY FULL</code></a>.</p>
+            </li>
+            <li class="listitem">
+              <p><em class="replaceable"><code>column_name</code></em> is the column name. For <code class="literal">existing local row</code>, <code class="literal">remote row</code>, and <code class="literal">replica identity full</code> cases, column names are logged only if the user lacks the privilege to access all columns of the table. If column names are present, they appear in the same order as the corresponding column values.</p>
+            </li>
+            <li class="listitem">
+              <p><em class="replaceable"><code>column_value</code></em> is the column value. The large column values are truncated to 64 bytes.</p>
+            </li>
+            <li class="listitem">
+              <p>Note that in case of <code class="literal">multiple_unique_conflicts</code> conflict, multiple <em class="replaceable"><code>detailed_explanation</code></em> and <em class="replaceable"><code>detail_values</code></em> lines will be generated, each detailing the conflict information associated with distinct unique constraints.</p>
+            </li>
+          </ul>
+        </div>
+      </dd>
+    </dl>
+  </div>
+  <p>Logical replication operations are performed with the privileges of the role which owns the subscription. Permissions failures on target tables will cause replication conflicts, as will enabled <a class="link" href="ddl-rowsecurity.html" title="5.9.&nbsp;Row Security Policies">row-level security</a> on target tables that the subscription owner is subject to, without regard to whether any policy would ordinarily reject the <code class="command">INSERT</code>, <code class="command">UPDATE</code>, <code class="command">DELETE</code> or <code class="command">TRUNCATE</code> which is being replicated. This restriction on row-level security may be lifted in a future version of <span class="productname">PostgreSQL</span>.</p>
+  <p>A conflict that produces an error will stop the replication; it must be resolved manually by the user. Details about the conflict can be found in the subscriber's server log.</p>
+  <p>The resolution can be done either by changing data or permissions on the subscriber so that it does not conflict with the incoming change or by skipping the transaction that conflicts with the existing data. When a conflict produces an error, the replication won't proceed, and the logical replication worker will emit the following kind of message to the subscriber's server log:</p>
+  <pre class="screen">
+ERROR:  conflict detected on relation "public.test": conflict=insert_exists
+DETAIL:  Key already exists in unique index "t_pkey", which was modified locally in transaction 740 at 2024-06-26 10:47:04.727375+08.
+Key (c)=(1); existing local row (1, 'local'); remote row (1, 'remote').
+CONTEXT:  processing remote data for replication origin "pg_16395" during "INSERT" for replication target relation "public.test" in transaction 725 finished at 0/14C0378
+</pre>
+  <p>The LSN of the transaction that contains the change violating the constraint and the replication origin name can be found from the server log (LSN 0/14C0378 and replication origin <code class="literal">pg_16395</code> in the above case). The transaction that produced the conflict can be skipped by using <a class="link" href="sql-altersubscription.html#SQL-ALTERSUBSCRIPTION-PARAMS-SKIP"><code class="command">ALTER SUBSCRIPTION ... SKIP</code></a> with the finish LSN (i.e., LSN 0/14C0378). The finish LSN could be an LSN at which the transaction is committed or prepared on the publisher. Alternatively, the transaction can also be skipped by calling the <a class="link" href="functions-admin.html#PG-REPLICATION-ORIGIN-ADVANCE"><code class="function">pg_replication_origin_advance()</code></a> function. Before using this function, the subscription needs to be disabled temporarily either by <a class="link" href="sql-altersubscription.html#SQL-ALTERSUBSCRIPTION-PARAMS-DISABLE"><code class="command">ALTER SUBSCRIPTION ... DISABLE</code></a> or, the subscription can be used with the <a class="link" href="sql-createsubscription.html#SQL-CREATESUBSCRIPTION-PARAMS-WITH-DISABLE-ON-ERROR"><code class="literal">disable_on_error</code></a> option. Then, you can use <code class="function">pg_replication_origin_advance()</code> function with the <em class="parameter"><code>node_name</code></em> (i.e., <code class="literal">pg_16395</code>) and the next LSN of the finish LSN (i.e., 0/14C0379). The current position of origins can be seen in the <a class="link" href="view-pg-replication-origin-status.html" title="53.19.&nbsp;pg_replication_origin_status"><code class="structname">pg_replication_origin_status</code></a> system view. Please note that skipping the whole transaction includes skipping changes that might not violate any constraint. This can easily make the subscriber inconsistent. The additional details regarding conflicting rows, such as their origin and commit timestamp can be seen in the <code class="literal">DETAIL</code> line of the log. But note that this information is only available when <a class="link" href="runtime-config-replication.html#GUC-TRACK-COMMIT-TIMESTAMP"><code class="varname">track_commit_timestamp</code></a> is enabled on the subscriber. Users can use this information to decide whether to retain the local change or adopt the remote alteration. For instance, the <code class="literal">DETAIL</code> line in the above log indicates that the existing row was modified locally. Users can manually perform a remote-change-win.</p>
+  <p>When the <a class="link" href="sql-createsubscription.html#SQL-CREATESUBSCRIPTION-PARAMS-WITH-STREAMING"><code class="literal">streaming</code></a> mode is <code class="literal">parallel</code>, the finish LSN of failed transactions may not be logged. In that case, it may be necessary to change the streaming mode to <code class="literal">on</code> or <code class="literal">off</code> and cause the same conflicts again so the finish LSN of the failed transaction will be written to the server log. For the usage of finish LSN, please refer to <a class="link" href="sql-altersubscription.html" title="ALTER SUBSCRIPTION"><code class="command">ALTER SUBSCRIPTION ... SKIP</code></a>.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="logical-replication-gencols.html" title="29.6.&nbsp;Generated Column Replication">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="logical-replication.html" title="Chapter&nbsp;29.&nbsp;Logical Replication">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="logical-replication-restrictions.html" title="29.8.&nbsp;Restrictions">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">29.6.&nbsp;Generated Column Replication&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;29.8.&nbsp;Restrictions</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/logical-replication-conflicts.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

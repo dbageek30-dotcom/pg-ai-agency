@@ -1,0 +1,14 @@
+# Environnement virtuel python
+.pgvenv/
+__pycache__/
+*.pyc
+
+# Configuration et secrets (Contient tes mots de passe DB !)
+.env
+
+# Base de données locale de session (SQLite)
+rag/rag_history.db
+
+# Fichiers temporaires ou logs
+*.log
+.DS_Store

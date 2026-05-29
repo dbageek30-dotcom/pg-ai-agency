@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 31.2. Test Evaluation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/regress-evaluation.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="31.2. Test Evaluation" />
+  <meta property="og:description" content="31.2.&amp;nbsp;Test Evaluation # 31.2.1. Error Message Differences 31.2.2. Locale Differences 31.2.3. Date and Time Differences 31.2.4. Floating-Point Differences 31.2.5. Row …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/regress-evaluation.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/regress-evaluation.html" title="PostgreSQL 18 - 31.2. Test Evaluation" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/regress-evaluation.html" title="PostgreSQL 18 - 31.2. Test Evaluation" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/regress-evaluation.html" title="PostgreSQL 17 - 31.2. Test Evaluation" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/regress-evaluation.html" title="PostgreSQL 16 - 31.2. Test Evaluation" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/regress-evaluation.html" title="PostgreSQL 15 - 31.2. Test Evaluation" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/regress-evaluation.html" title="PostgreSQL 14 - 31.2. Test Evaluation" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/regress-evaluation.html" title="PostgreSQL devel - 31.2. Test Evaluation"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/regress-evaluation.html" title="PostgreSQL 13 - 31.2. Test Evaluation"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/regress-evaluation.html" title="PostgreSQL 12 - 31.2. Test Evaluation"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/regress-evaluation.html" title="PostgreSQL 11 - 31.2. Test Evaluation"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/regress-evaluation.html" title="PostgreSQL 10 - 31.2. Test Evaluation"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/regress-evaluation.html" title="PostgreSQL 9.6 - 31.2. Test Evaluation"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/regress-evaluation.html" title="PostgreSQL 9.5 - 31.2. Test Evaluation"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/regress-evaluation.html" title="PostgreSQL 9.4 - 31.2. Test Evaluation"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/regress-evaluation.html" title="PostgreSQL 9.3 - 31.2. Test Evaluation"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/regress-evaluation.html" title="PostgreSQL 9.2 - 31.2. Test Evaluation"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/regress-evaluation.html" title="PostgreSQL 9.1 - 31.2. Test Evaluation"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/regress-evaluation.html" title="PostgreSQL 9.0 - 31.2. Test Evaluation"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/regress-evaluation.html" title="PostgreSQL 8.4 - 31.2. Test Evaluation"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/regress-evaluation.html" title="PostgreSQL 8.3 - 31.2. Test Evaluation"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/regress-evaluation.html" title="PostgreSQL 8.2 - 31.2. Test Evaluation"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/regress-evaluation.html" title="PostgreSQL 8.1 - 31.2. Test Evaluation"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/regress-evaluation.html" title="PostgreSQL 8.0 - 31.2. Test Evaluation"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/regress-evaluation.html" title="PostgreSQL 7.4 - 31.2. Test Evaluation"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/regress-evaluation.html" title="PostgreSQL 7.3 - 31.2. Test Evaluation"  rel="nofollow">7.3</a>
+                    
+                       / 
+                      <a href="/docs/7.2/regress-evaluation.html" title="PostgreSQL 7.2 - 31.2. Test Evaluation"  rel="nofollow">7.2</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">31.2.&nbsp;Test Evaluation</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="regress-run.html" title="31.1.&nbsp;Running the Tests">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="regress.html" title="Chapter&nbsp;31.&nbsp;Regression Tests">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;31.&nbsp;Regression Tests</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="regress-variant.html" title="31.3.&nbsp;Variant Comparison Files">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="REGRESS-EVALUATION">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">31.2.&nbsp;Test Evaluation <a href="#REGRESS-EVALUATION" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <div class="toc">
+    <dl class="toc">
+      <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-MESSAGE-DIFFERENCES">31.2.1. Error Message Differences</a></span></dt>
+      <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-LOCALE-DIFFERENCES">31.2.2. Locale Differences</a></span></dt>
+      <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-DATE-TIME-DIFFERENCES">31.2.3. Date and Time Differences</a></span></dt>
+      <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-FLOAT-DIFFERENCES">31.2.4. Floating-Point Differences</a></span></dt>
+      <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-ORDERING-DIFFERENCES">31.2.5. Row Ordering Differences</a></span></dt>
+      <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-STACK-DEPTH">31.2.6. Insufficient Stack Depth</a></span></dt>
+      <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-RANDOM-TEST">31.2.7. The <span class="quote">“<span class="quote">random</span>”</span> Test</a></span></dt>
+      <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-CONFIG-PARAMS">31.2.8. Configuration Parameters</a></span></dt>
+    </dl>
+  </div>
+  <p>Some properly installed and fully functional <span class="productname">PostgreSQL</span> installations can <span class="quote">“<span class="quote">fail</span>”</span> some of these regression tests due to platform-specific artifacts such as varying floating-point representation and message wording. The tests are currently evaluated using a simple <code class="command">diff</code> comparison against the outputs generated on a reference system, so the results are sensitive to small system differences. When a test is reported as <span class="quote">“<span class="quote">failed</span>”</span>, always examine the differences between expected and actual results; you might find that the differences are not significant. Nonetheless, we still strive to maintain accurate reference files across all supported platforms, so it can be expected that all tests pass.</p>
+  <p>The actual outputs of the regression tests are in files in the <code class="filename">src/test/regress/results</code> directory. The test script uses <code class="command">diff</code> to compare each output file against the reference outputs stored in the <code class="filename">src/test/regress/expected</code> directory. Any differences are saved for your inspection in <code class="filename">src/test/regress/regression.diffs</code>. (When running a test suite other than the core tests, these files of course appear in the relevant subdirectory, not <code class="filename">src/test/regress</code>.)</p>
+  <p>If you don't like the <code class="command">diff</code> options that are used by default, set the environment variable <code class="envar">PG_REGRESS_DIFF_OPTS</code>, for instance <code class="literal">PG_REGRESS_DIFF_OPTS='-c'</code>. (Or you can run <code class="command">diff</code> yourself, if you prefer.)</p>
+  <p>If for some reason a particular platform generates a <span class="quote">“<span class="quote">failure</span>”</span> for a given test, but inspection of the output convinces you that the result is valid, you can add a new comparison file to silence the failure report in future test runs. See <a class="xref" href="regress-variant.html" title="31.3.&nbsp;Variant Comparison Files">Section&nbsp;31.3</a> for details.</p>
+  <div class="sect2" id="REGRESS-EVALUATION-MESSAGE-DIFFERENCES">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">31.2.1.&nbsp;Error Message Differences <a href="#REGRESS-EVALUATION-MESSAGE-DIFFERENCES" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>Some of the regression tests involve intentional invalid input values. Error messages can come from either the <span class="productname">PostgreSQL</span> code or from the host platform system routines. In the latter case, the messages can vary between platforms, but should reflect similar information. These differences in messages will result in a <span class="quote">“<span class="quote">failed</span>”</span> regression test that can be validated by inspection.</p>
+  </div>
+  <div class="sect2" id="REGRESS-EVALUATION-LOCALE-DIFFERENCES">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">31.2.2.&nbsp;Locale Differences <a href="#REGRESS-EVALUATION-LOCALE-DIFFERENCES" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>If you run the tests against a server that was initialized with a collation-order locale other than C, then there might be differences due to sort order and subsequent failures. The regression test suite is set up to handle this problem by providing alternate result files that together are known to handle a large number of locales.</p>
+    <p>To run the tests in a different locale when using the temporary-installation method, pass the appropriate locale-related environment variables on the <code class="command">make</code> command line, for example:</p>
+    <pre class="programlisting">
+make check LANG=de_DE.utf8
+</pre>
+    <p>(The regression test driver unsets <code class="envar">LC_ALL</code>, so it does not work to choose the locale using that variable.) To use no locale, either unset all locale-related environment variables (or set them to <code class="literal">C</code>) or use the following special invocation:</p>
+    <pre class="programlisting">
+make check NO_LOCALE=1
+</pre>
+    <p>When running the tests against an existing installation, the locale setup is determined by the existing installation. To change it, initialize the database cluster with a different locale by passing the appropriate options to <code class="command">initdb</code>.</p>
+    <p>In general, it is advisable to try to run the regression tests in the locale setup that is wanted for production use, as this will exercise the locale- and encoding-related code portions that will actually be used in production. Depending on the operating system environment, you might get failures, but then you will at least know what locale-specific behaviors to expect when running real applications.</p>
+  </div>
+  <div class="sect2" id="REGRESS-EVALUATION-DATE-TIME-DIFFERENCES">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">31.2.3.&nbsp;Date and Time Differences <a href="#REGRESS-EVALUATION-DATE-TIME-DIFFERENCES" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>Most of the date and time results are dependent on the time zone environment. The reference files are generated for time zone <code class="literal">America/Los_Angeles</code>, and there will be apparent failures if the tests are not run with that time zone setting. The regression test driver sets environment variable <code class="envar">PGTZ</code> to <code class="literal">America/Los_Angeles</code>, which normally ensures proper results.</p>
+  </div>
+  <div class="sect2" id="REGRESS-EVALUATION-FLOAT-DIFFERENCES">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">31.2.4.&nbsp;Floating-Point Differences <a href="#REGRESS-EVALUATION-FLOAT-DIFFERENCES" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>Some of the tests involve computing 64-bit floating-point numbers (<code class="type">double precision</code>) from table columns. Differences in results involving mathematical functions of <code class="type">double precision</code> columns have been observed. The <code class="literal">float8</code> and <code class="literal">geometry</code> tests are particularly prone to small differences across platforms, or even with different compiler optimization settings. Human eyeball comparison is needed to determine the real significance of these differences which are usually 10 places to the right of the decimal point.</p>
+    <p>Some systems display minus zero as <code class="literal">-0</code>, while others just show <code class="literal">0</code>.</p>
+    <p>Some systems signal errors from <code class="function">pow()</code> and <code class="function">exp()</code> differently from the mechanism expected by the current <span class="productname">PostgreSQL</span> code.</p>
+  </div>
+  <div class="sect2" id="REGRESS-EVALUATION-ORDERING-DIFFERENCES">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">31.2.5.&nbsp;Row Ordering Differences <a href="#REGRESS-EVALUATION-ORDERING-DIFFERENCES" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>You might see differences in which the same rows are output in a different order than what appears in the expected file. In most cases this is not, strictly speaking, a bug. Most of the regression test scripts are not so pedantic as to use an <code class="literal">ORDER BY</code> for every single <code class="literal">SELECT</code>, and so their result row orderings are not well-defined according to the SQL specification. In practice, since we are looking at the same queries being executed on the same data by the same software, we usually get the same result ordering on all platforms, so the lack of <code class="literal">ORDER BY</code> is not a problem. Some queries do exhibit cross-platform ordering differences, however. When testing against an already-installed server, ordering differences can also be caused by non-C locale settings or non-default parameter settings, such as custom values of <code class="varname">work_mem</code> or the planner cost parameters.</p>
+    <p>Therefore, if you see an ordering difference, it's not something to worry about, unless the query does have an <code class="literal">ORDER BY</code> that your result is violating. However, please report it anyway, so that we can add an <code class="literal">ORDER BY</code> to that particular query to eliminate the bogus <span class="quote">“<span class="quote">failure</span>”</span> in future releases.</p>
+    <p>You might wonder why we don't order all the regression test queries explicitly to get rid of this issue once and for all. The reason is that that would make the regression tests less useful, not more, since they'd tend to exercise query plan types that produce ordered results to the exclusion of those that don't.</p>
+  </div>
+  <div class="sect2" id="REGRESS-EVALUATION-STACK-DEPTH">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">31.2.6.&nbsp;Insufficient Stack Depth <a href="#REGRESS-EVALUATION-STACK-DEPTH" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>If the <code class="literal">errors</code> test results in a server crash at the <code class="literal">select infinite_recurse()</code> command, it means that the platform's limit on process stack size is smaller than the <a class="xref" href="runtime-config-resource.html#GUC-MAX-STACK-DEPTH">max_stack_depth</a> parameter indicates. This can be fixed by running the server under a higher stack size limit (4MB is recommended with the default value of <code class="varname">max_stack_depth</code>). If you are unable to do that, an alternative is to reduce the value of <code class="varname">max_stack_depth</code>.</p>
+    <p>On platforms supporting <code class="function">getrlimit()</code>, the server should automatically choose a safe value of <code class="varname">max_stack_depth</code>; so unless you've manually overridden this setting, a failure of this kind is a reportable bug.</p>
+  </div>
+  <div class="sect2" id="REGRESS-EVALUATION-RANDOM-TEST">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">31.2.7.&nbsp;The <span class="quote">“<span class="quote">random</span>”</span> Test <a href="#REGRESS-EVALUATION-RANDOM-TEST" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>The <code class="literal">random</code> test script is intended to produce random results. In very rare cases, this causes that regression test to fail. Typing:</p>
+    <pre class="programlisting">
+diff results/random.out expected/random.out
+</pre>
+    <p>should produce only one or a few lines of differences. You need not worry unless the random test fails repeatedly.</p>
+  </div>
+  <div class="sect2" id="REGRESS-EVALUATION-CONFIG-PARAMS">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">31.2.8.&nbsp;Configuration Parameters <a href="#REGRESS-EVALUATION-CONFIG-PARAMS" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>When running the tests against an existing installation, some non-default parameter settings could cause the tests to fail. For example, changing parameters such as <code class="varname">enable_seqscan</code> or <code class="varname">enable_indexscan</code> could cause plan changes that would affect the results of tests that use <code class="command">EXPLAIN</code>.</p>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="regress-run.html" title="31.1.&nbsp;Running the Tests">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="regress.html" title="Chapter&nbsp;31.&nbsp;Regression Tests">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="regress-variant.html" title="31.3.&nbsp;Variant Comparison Files">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">31.1.&nbsp;Running the Tests&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;31.3.&nbsp;Variant Comparison Files</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/regress-evaluation.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

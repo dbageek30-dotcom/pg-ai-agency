@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 27.6. Monitoring Disk Usage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/diskusage.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="27.6. Monitoring Disk Usage" />
+  <meta property="og:description" content="27.6.&amp;nbsp;Monitoring Disk Usage # 27.6.1. Determining Disk Usage 27.6.2. Disk Full Failure This section discusses how to monitor the disk …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/diskusage.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/diskusage.html" title="PostgreSQL 18 - 27.6. Monitoring Disk Usage" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/diskusage.html" title="PostgreSQL 18 - 27.6. Monitoring Disk Usage" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/diskusage.html" title="PostgreSQL 17 - 27.6. Monitoring Disk Usage" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/diskusage.html" title="PostgreSQL 16 - 27.6. Monitoring Disk Usage" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/diskusage.html" title="PostgreSQL 15 - 27.6. Monitoring Disk Usage" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/diskusage.html" title="PostgreSQL 14 - 27.6. Monitoring Disk Usage" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/diskusage.html" title="PostgreSQL devel - 27.6. Monitoring Disk Usage"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/diskusage.html" title="PostgreSQL 13 - 27.6. Monitoring Disk Usage"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/diskusage.html" title="PostgreSQL 12 - 27.6. Monitoring Disk Usage"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/diskusage.html" title="PostgreSQL 11 - 27.6. Monitoring Disk Usage"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/diskusage.html" title="PostgreSQL 10 - 27.6. Monitoring Disk Usage"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/diskusage.html" title="PostgreSQL 9.6 - 27.6. Monitoring Disk Usage"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/diskusage.html" title="PostgreSQL 9.5 - 27.6. Monitoring Disk Usage"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/diskusage.html" title="PostgreSQL 9.4 - 27.6. Monitoring Disk Usage"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/diskusage.html" title="PostgreSQL 9.3 - 27.6. Monitoring Disk Usage"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/diskusage.html" title="PostgreSQL 9.2 - 27.6. Monitoring Disk Usage"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/diskusage.html" title="PostgreSQL 9.1 - 27.6. Monitoring Disk Usage"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/diskusage.html" title="PostgreSQL 9.0 - 27.6. Monitoring Disk Usage"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/diskusage.html" title="PostgreSQL 8.4 - 27.6. Monitoring Disk Usage"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/diskusage.html" title="PostgreSQL 8.3 - 27.6. Monitoring Disk Usage"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/diskusage.html" title="PostgreSQL 8.2 - 27.6. Monitoring Disk Usage"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/diskusage.html" title="PostgreSQL 8.1 - 27.6. Monitoring Disk Usage"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/diskusage.html" title="PostgreSQL 8.0 - 27.6. Monitoring Disk Usage"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/diskusage.html" title="PostgreSQL 7.4 - 27.6. Monitoring Disk Usage"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/diskusage.html" title="PostgreSQL 7.3 - 27.6. Monitoring Disk Usage"  rel="nofollow">7.3</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">27.6.&nbsp;Monitoring Disk Usage</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="dynamic-trace.html" title="27.5.&nbsp;Dynamic Tracing">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="monitoring.html" title="Chapter&nbsp;27.&nbsp;Monitoring Database Activity">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;27.&nbsp;Monitoring Database Activity</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="wal.html" title="Chapter&nbsp;28.&nbsp;Reliability and the Write-Ahead Log">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="DISKUSAGE">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">27.6.&nbsp;Monitoring Disk Usage <a href="#DISKUSAGE" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <div class="toc">
+    <dl class="toc">
+      <dt><span class="sect2"><a href="diskusage.html#DISK-USAGE">27.6.1. Determining Disk Usage</a></span></dt>
+      <dt><span class="sect2"><a href="diskusage.html#DISK-FULL">27.6.2. Disk Full Failure</a></span></dt>
+    </dl>
+  </div>
+  <p>This section discusses how to monitor the disk usage of a <span class="productname">PostgreSQL</span> database system.</p>
+  <div class="sect2" id="DISK-USAGE">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">27.6.1.&nbsp;Determining Disk Usage <a href="#DISK-USAGE" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div><a id="id-1.6.14.11.3.2" class="indexterm" name="id-1.6.14.11.3.2"></a>
+    <p>Each table has a primary heap disk file where most of the data is stored. If the table has any columns with potentially-wide values, there also might be a <acronym class="acronym">TOAST</acronym> file associated with the table, which is used to store values too wide to fit comfortably in the main table (see <a class="xref" href="storage-toast.html" title="66.2.&nbsp;TOAST">Section&nbsp;66.2</a>). There will be one valid index on the <acronym class="acronym">TOAST</acronym> table, if present. There also might be indexes associated with the base table. Each table and index is stored in a separate disk file — possibly more than one file, if the file would exceed one gigabyte. Naming conventions for these files are described in <a class="xref" href="storage-file-layout.html" title="66.1.&nbsp;Database File Layout">Section&nbsp;66.1</a>.</p>
+    <p>You can monitor disk space in three ways: using the SQL functions listed in <a class="xref" href="functions-admin.html#FUNCTIONS-ADMIN-DBSIZE" title="Table&nbsp;9.102.&nbsp;Database Object Size Functions">Table&nbsp;9.102</a>, using the <a class="xref" href="oid2name.html" title="oid2name"><span class="refentrytitle">oid2name</span></a> module, or using manual inspection of the system catalogs. The SQL functions are the easiest to use and are generally recommended. The remainder of this section shows how to do it by inspection of the system catalogs.</p>
+    <p>Using <span class="application">psql</span> on a recently vacuumed or analyzed database, you can issue queries to see the disk usage of any table:</p>
+    <pre class="programlisting">
+SELECT pg_relation_filepath(oid), relpages FROM pg_class WHERE relname = 'customer';
+
+ pg_relation_filepath | relpages
+----------------------+----------
+ base/16384/16806     |       60
+(1 row)
+</pre>
+    <p>Each page is typically 8 kilobytes. (Remember, <code class="structfield">relpages</code> is only updated by <code class="command">VACUUM</code>, <code class="command">ANALYZE</code>, and a few DDL commands such as <code class="command">CREATE INDEX</code>.) The file path name is of interest if you want to examine the table's disk file directly.</p>
+    <p>To show the space used by <acronym class="acronym">TOAST</acronym> tables, use a query like the following:</p>
+    <pre class="programlisting">
+SELECT relname, relpages
+FROM pg_class,
+     (SELECT reltoastrelid
+      FROM pg_class
+      WHERE relname = 'customer') AS ss
+WHERE oid = ss.reltoastrelid OR
+      oid = (SELECT indexrelid
+             FROM pg_index
+             WHERE indrelid = ss.reltoastrelid)
+ORDER BY relname;
+
+       relname        | relpages
+----------------------+----------
+ pg_toast_16806       |        0
+ pg_toast_16806_index |        1
+</pre>
+    <p>You can easily display index sizes, too:</p>
+    <pre class="programlisting">
+SELECT c2.relname, c2.relpages
+FROM pg_class c, pg_class c2, pg_index i
+WHERE c.relname = 'customer' AND
+      c.oid = i.indrelid AND
+      c2.oid = i.indexrelid
+ORDER BY c2.relname;
+
+      relname      | relpages
+-------------------+----------
+ customer_id_index |       26
+</pre>
+    <p>It is easy to find your largest tables and indexes using this information:</p>
+    <pre class="programlisting">
+SELECT relname, relpages
+FROM pg_class
+ORDER BY relpages DESC;
+
+       relname        | relpages
+----------------------+----------
+ bigtable             |     3290
+ customer             |     3144
+</pre>
+  </div>
+  <div class="sect2" id="DISK-FULL">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">27.6.2.&nbsp;Disk Full Failure <a href="#DISK-FULL" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>The most important disk monitoring task of a database administrator is to make sure the disk doesn't become full. A filled data disk will not result in data corruption, but it might prevent useful activity from occurring. If the disk holding the WAL files grows full, database server panic and consequent shutdown might occur.</p>
+    <p>If you cannot free up additional space on the disk by deleting other things, you can move some of the database files to other file systems by making use of tablespaces. See <a class="xref" href="manage-ag-tablespaces.html" title="22.6.&nbsp;Tablespaces">Section&nbsp;22.6</a> for more information about that.</p>
+    <div class="tip">
+      <h3 class="title">Tip</h3>
+      <p>Some file systems perform badly when they are almost full, so do not wait until the disk is completely full to take action.</p>
+    </div>
+    <p>If your system supports per-user disk quotas, then the database will naturally be subject to whatever quota is placed on the user the server runs as. Exceeding the quota will have the same bad effects as running out of disk space entirely.</p>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="dynamic-trace.html" title="27.5.&nbsp;Dynamic Tracing">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="monitoring.html" title="Chapter&nbsp;27.&nbsp;Monitoring Database Activity">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="wal.html" title="Chapter&nbsp;28.&nbsp;Reliability and the Write-Ahead Log">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">27.5.&nbsp;Dynamic Tracing&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;28.&nbsp;Reliability and the Write-Ahead Log</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/diskusage.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 32.17. The Connection Service File</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/libpq-pgservice.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="32.17. The Connection Service File" />
+  <meta property="og:description" content="32.17.&amp;nbsp;The Connection Service File # The connection service file allows libpq connection parameters to be associated with a single service …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/libpq-pgservice.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/libpq-pgservice.html" title="PostgreSQL 18 - 32.17. The Connection Service File" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/libpq-pgservice.html" title="PostgreSQL 18 - 32.17. The Connection Service File" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/libpq-pgservice.html" title="PostgreSQL 17 - 32.17. The Connection Service File" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/libpq-pgservice.html" title="PostgreSQL 16 - 32.17. The Connection Service File" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/libpq-pgservice.html" title="PostgreSQL 15 - 32.17. The Connection Service File" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/libpq-pgservice.html" title="PostgreSQL 14 - 32.17. The Connection Service File" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/libpq-pgservice.html" title="PostgreSQL devel - 32.17. The Connection Service File"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/libpq-pgservice.html" title="PostgreSQL 13 - 32.17. The Connection Service File"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/libpq-pgservice.html" title="PostgreSQL 12 - 32.17. The Connection Service File"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/libpq-pgservice.html" title="PostgreSQL 11 - 32.17. The Connection Service File"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/libpq-pgservice.html" title="PostgreSQL 10 - 32.17. The Connection Service File"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/libpq-pgservice.html" title="PostgreSQL 9.6 - 32.17. The Connection Service File"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/libpq-pgservice.html" title="PostgreSQL 9.5 - 32.17. The Connection Service File"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/libpq-pgservice.html" title="PostgreSQL 9.4 - 32.17. The Connection Service File"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/libpq-pgservice.html" title="PostgreSQL 9.3 - 32.17. The Connection Service File"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/libpq-pgservice.html" title="PostgreSQL 9.2 - 32.17. The Connection Service File"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/libpq-pgservice.html" title="PostgreSQL 9.1 - 32.17. The Connection Service File"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/libpq-pgservice.html" title="PostgreSQL 9.0 - 32.17. The Connection Service File"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/libpq-pgservice.html" title="PostgreSQL 8.4 - 32.17. The Connection Service File"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/libpq-pgservice.html" title="PostgreSQL 8.3 - 32.17. The Connection Service File"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/libpq-pgservice.html" title="PostgreSQL 8.2 - 32.17. The Connection Service File"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/libpq-pgservice.html" title="PostgreSQL 8.1 - 32.17. The Connection Service File"  rel="nofollow">8.1</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">32.17.&nbsp;The Connection Service File</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="libpq-pgpass.html" title="32.16.&nbsp;The Password File">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter&nbsp;32.&nbsp;libpq — C Library">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;32.&nbsp;<span class="application">libpq</span> — C Library</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="libpq-ldap.html" title="32.18.&nbsp;LDAP Lookup of Connection Parameters">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="LIBPQ-PGSERVICE">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">32.17.&nbsp;The Connection Service File <a href="#LIBPQ-PGSERVICE" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div><a id="id-1.7.3.24.2" class="indexterm" name="id-1.7.3.24.2"></a><a id="id-1.7.3.24.3" class="indexterm" name="id-1.7.3.24.3"></a><a id="id-1.7.3.24.4" class="indexterm" name="id-1.7.3.24.4"></a>
+  <p>The connection service file allows libpq connection parameters to be associated with a single service name. That service name can then be specified using the <code class="literal">service</code> key word in a libpq connection string, and the associated settings will be used. This allows connection parameters to be modified without requiring a recompile of the libpq-using application. The service name can also be specified using the <code class="envar">PGSERVICE</code> environment variable.</p>
+  <p>Service names can be defined in either a per-user service file or a system-wide file. If the same service name exists in both the user and the system file, the user file takes precedence. By default, the per-user service file is named <code class="filename">~/.pg_service.conf</code>. On Microsoft Windows, it is named <code class="filename">%APPDATA%\postgresql\.pg_service.conf</code> (where <code class="filename">%APPDATA%</code> refers to the Application Data subdirectory in the user's profile). A different file name can be specified by setting the environment variable <code class="envar">PGSERVICEFILE</code>. The system-wide file is named <code class="filename">pg_service.conf</code>. By default it is sought in the <code class="filename">etc</code> directory of the <span class="productname">PostgreSQL</span> installation (use <code class="literal">pg_config --sysconfdir</code> to identify this directory precisely). Another directory, but not a different file name, can be specified by setting the environment variable <code class="envar">PGSYSCONFDIR</code>.</p>
+  <p>Either service file uses an <span class="quote">“<span class="quote">INI file</span>”</span> format where the section name is the service name and the parameters are connection parameters; see <a class="xref" href="libpq-connect.html#LIBPQ-PARAMKEYWORDS" title="32.1.2.&nbsp;Parameter Key Words">Section&nbsp;32.1.2</a> for a list. For example:</p>
+  <pre class="programlisting">
+# comment
+[mydb]
+host=somehost
+port=5433
+user=admin
+</pre>
+  <p>An example file is provided in the <span class="productname">PostgreSQL</span> installation at <code class="filename">share/pg_service.conf.sample</code>.</p>
+  <p>Connection parameters obtained from a service file are combined with parameters obtained from other sources. A service file setting overrides the corresponding environment variable, and in turn can be overridden by a value given directly in the connection string. For example, using the above service file, a connection string <code class="literal">service=mydb port=5434</code> will use host <code class="literal">somehost</code>, port <code class="literal">5434</code>, user <code class="literal">admin</code>, and other parameters as set by environment variables or built-in defaults.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="libpq-pgpass.html" title="32.16.&nbsp;The Password File">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter&nbsp;32.&nbsp;libpq — C Library">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="libpq-ldap.html" title="32.18.&nbsp;LDAP Lookup of Connection Parameters">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">32.16.&nbsp;The Password File&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;32.18.&nbsp;LDAP Lookup of Connection Parameters</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/libpq-pgservice.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

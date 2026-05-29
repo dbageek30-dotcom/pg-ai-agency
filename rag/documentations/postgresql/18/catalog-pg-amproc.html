@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 52.5. pg_amproc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/catalog-pg-amproc.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="52.5. pg_amproc" />
+  <meta property="og:description" content="52.5.&amp;nbsp;pg_amproc # The catalog pg_amproc stores information about support functions associated with access method operator families. There is one row …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/catalog-pg-amproc.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/catalog-pg-amproc.html" title="PostgreSQL 18 - 52.5. pg_amproc" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/catalog-pg-amproc.html" title="PostgreSQL 18 - 52.5. pg_amproc" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/catalog-pg-amproc.html" title="PostgreSQL 17 - 52.5. pg_amproc" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/catalog-pg-amproc.html" title="PostgreSQL 16 - 52.5. pg_amproc" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/catalog-pg-amproc.html" title="PostgreSQL 15 - 52.5. pg_amproc" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/catalog-pg-amproc.html" title="PostgreSQL 14 - 52.5. pg_amproc" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/catalog-pg-amproc.html" title="PostgreSQL devel - 52.5. pg_amproc"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/catalog-pg-amproc.html" title="PostgreSQL 13 - 52.5. pg_amproc"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/catalog-pg-amproc.html" title="PostgreSQL 12 - 52.5. pg_amproc"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/catalog-pg-amproc.html" title="PostgreSQL 11 - 52.5. pg_amproc"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/catalog-pg-amproc.html" title="PostgreSQL 10 - 52.5. pg_amproc"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/catalog-pg-amproc.html" title="PostgreSQL 9.6 - 52.5. pg_amproc"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/catalog-pg-amproc.html" title="PostgreSQL 9.5 - 52.5. pg_amproc"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/catalog-pg-amproc.html" title="PostgreSQL 9.4 - 52.5. pg_amproc"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/catalog-pg-amproc.html" title="PostgreSQL 9.3 - 52.5. pg_amproc"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/catalog-pg-amproc.html" title="PostgreSQL 9.2 - 52.5. pg_amproc"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/catalog-pg-amproc.html" title="PostgreSQL 9.1 - 52.5. pg_amproc"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/catalog-pg-amproc.html" title="PostgreSQL 9.0 - 52.5. pg_amproc"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/catalog-pg-amproc.html" title="PostgreSQL 8.4 - 52.5. pg_amproc"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/catalog-pg-amproc.html" title="PostgreSQL 8.3 - 52.5. pg_amproc"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/catalog-pg-amproc.html" title="PostgreSQL 8.2 - 52.5. pg_amproc"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/catalog-pg-amproc.html" title="PostgreSQL 8.1 - 52.5. pg_amproc"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/catalog-pg-amproc.html" title="PostgreSQL 8.0 - 52.5. pg_amproc"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/catalog-pg-amproc.html" title="PostgreSQL 7.4 - 52.5. pg_amproc"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/catalog-pg-amproc.html" title="PostgreSQL 7.3 - 52.5. pg_amproc"  rel="nofollow">7.3</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">52.5.&nbsp;<code class="structname">pg_amproc</code></th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="catalog-pg-amop.html" title="52.4.&nbsp;pg_amop">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="catalogs.html" title="Chapter&nbsp;52.&nbsp;System Catalogs">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;52.&nbsp;System Catalogs</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="catalog-pg-attrdef.html" title="52.6.&nbsp;pg_attrdef">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="CATALOG-PG-AMPROC">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">52.5.&nbsp;<code class="structname">pg_amproc</code> <a href="#CATALOG-PG-AMPROC" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div><a id="id-1.10.4.7.2" class="indexterm" name="id-1.10.4.7.2"></a>
+  <p>The catalog <code class="structname">pg_amproc</code> stores information about support functions associated with access method operator families. There is one row for each support function belonging to an operator family.</p>
+  <div class="table" id="id-1.10.4.7.4">
+    <p class="title"><strong>Table&nbsp;52.5.&nbsp;<code class="structname">pg_amproc</code> Columns</strong></p>
+    <div class="table-contents">
+      <table class="table" summary="pg_amproc Columns" border="1">
+        <colgroup>
+          <col />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="catalog_table_entry">
+              <p class="column_definition">Column Type</p>
+              <p>Description</p>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">oid</code> <code class="type">oid</code></p>
+              <p>Row identifier</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">amprocfamily</code> <code class="type">oid</code> (references <a class="link" href="catalog-pg-opfamily.html" title="52.35.&nbsp;pg_opfamily"><code class="structname">pg_opfamily</code></a>.<code class="structfield">oid</code>)</p>
+              <p>The operator family this entry is for</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">amproclefttype</code> <code class="type">oid</code> (references <a class="link" href="catalog-pg-type.html" title="52.64.&nbsp;pg_type"><code class="structname">pg_type</code></a>.<code class="structfield">oid</code>)</p>
+              <p>Left-hand input data type of associated operator</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">amprocrighttype</code> <code class="type">oid</code> (references <a class="link" href="catalog-pg-type.html" title="52.64.&nbsp;pg_type"><code class="structname">pg_type</code></a>.<code class="structfield">oid</code>)</p>
+              <p>Right-hand input data type of associated operator</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">amprocnum</code> <code class="type">int2</code></p>
+              <p>Support function number</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="catalog_table_entry">
+              <p class="column_definition"><code class="structfield">amproc</code> <code class="type">regproc</code> (references <a class="link" href="catalog-pg-proc.html" title="52.39.&nbsp;pg_proc"><code class="structname">pg_proc</code></a>.<code class="structfield">oid</code>)</p>
+              <p>OID of the function</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div><br class="table-break" />
+  <p>The usual interpretation of the <code class="structfield">amproclefttype</code> and <code class="structfield">amprocrighttype</code> fields is that they identify the left and right input types of the operator(s) that a particular support function supports. For some access methods these match the input data type(s) of the support function itself, for others not. There is a notion of <span class="quote">“<span class="quote">default</span>”</span> support functions for an index, which are those with <code class="structfield">amproclefttype</code> and <code class="structfield">amprocrighttype</code> both equal to the index operator class's <code class="structfield">opcintype</code>.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="catalog-pg-amop.html" title="52.4.&nbsp;pg_amop">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="catalogs.html" title="Chapter&nbsp;52.&nbsp;System Catalogs">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="catalog-pg-attrdef.html" title="52.6.&nbsp;pg_attrdef">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">52.4.&nbsp;<code class="structname">pg_amop</code>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;52.6.&nbsp;<code class="structname">pg_attrdef</code></td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/catalog-pg-amproc.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 29.12. Configuration Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/logical-replication-config.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="29.12. Configuration Settings" />
+  <meta property="og:description" content="29.12.&amp;nbsp;Configuration Settings # 29.12.1. Publishers 29.12.2. Subscribers Logical replication requires several configuration options to be set. These options are relevant …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/logical-replication-config.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/logical-replication-config.html" title="PostgreSQL 18 - 29.12. Configuration Settings" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/logical-replication-config.html" title="PostgreSQL 18 - 29.12. Configuration Settings" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/logical-replication-config.html" title="PostgreSQL 17 - 29.12. Configuration Settings" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/logical-replication-config.html" title="PostgreSQL 16 - 29.12. Configuration Settings" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/logical-replication-config.html" title="PostgreSQL 15 - 29.12. Configuration Settings" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/logical-replication-config.html" title="PostgreSQL 14 - 29.12. Configuration Settings" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/logical-replication-config.html" title="PostgreSQL devel - 29.12. Configuration Settings"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/logical-replication-config.html" title="PostgreSQL 13 - 29.12. Configuration Settings"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/logical-replication-config.html" title="PostgreSQL 12 - 29.12. Configuration Settings"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/logical-replication-config.html" title="PostgreSQL 11 - 29.12. Configuration Settings"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/logical-replication-config.html" title="PostgreSQL 10 - 29.12. Configuration Settings"  rel="nofollow">10</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">29.12.&nbsp;Configuration Settings</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="logical-replication-security.html" title="29.11.&nbsp;Security">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="logical-replication.html" title="Chapter&nbsp;29.&nbsp;Logical Replication">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;29.&nbsp;Logical Replication</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="logical-replication-upgrade.html" title="29.13.&nbsp;Upgrade">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="LOGICAL-REPLICATION-CONFIG">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">29.12.&nbsp;Configuration Settings <a href="#LOGICAL-REPLICATION-CONFIG" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <div class="toc">
+    <dl class="toc">
+      <dt><span class="sect2"><a href="logical-replication-config.html#LOGICAL-REPLICATION-CONFIG-PUBLISHER">29.12.1. Publishers</a></span></dt>
+      <dt><span class="sect2"><a href="logical-replication-config.html#LOGICAL-REPLICATION-CONFIG-SUBSCRIBER">29.12.2. Subscribers</a></span></dt>
+    </dl>
+  </div>
+  <p>Logical replication requires several configuration options to be set. These options are relevant only on one side of the replication.</p>
+  <div class="sect2" id="LOGICAL-REPLICATION-CONFIG-PUBLISHER">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">29.12.1.&nbsp;Publishers <a href="#LOGICAL-REPLICATION-CONFIG-PUBLISHER" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p><a class="link" href="runtime-config-wal.html#GUC-WAL-LEVEL"><code class="varname">wal_level</code></a> must be set to <code class="literal">logical</code>.</p>
+    <p><a class="link" href="runtime-config-replication.html#GUC-MAX-REPLICATION-SLOTS"><code class="varname">max_replication_slots</code></a> must be set to at least the number of subscriptions expected to connect, plus some reserve for table synchronization.</p>
+    <p>Logical replication slots are also affected by <a class="link" href="runtime-config-replication.html#GUC-IDLE-REPLICATION-SLOT-TIMEOUT"><code class="varname">idle_replication_slot_timeout</code></a>.</p>
+    <p><a class="link" href="runtime-config-replication.html#GUC-MAX-WAL-SENDERS"><code class="varname">max_wal_senders</code></a> should be set to at least the same as <code class="varname">max_replication_slots</code>, plus the number of physical replicas that are connected at the same time.</p>
+    <p>Logical replication walsender is also affected by <a class="link" href="runtime-config-replication.html#GUC-WAL-SENDER-TIMEOUT"><code class="varname">wal_sender_timeout</code></a>.</p>
+  </div>
+  <div class="sect2" id="LOGICAL-REPLICATION-CONFIG-SUBSCRIBER">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">29.12.2.&nbsp;Subscribers <a href="#LOGICAL-REPLICATION-CONFIG-SUBSCRIBER" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p><a class="link" href="runtime-config-replication.html#GUC-MAX-ACTIVE-REPLICATION-ORIGINS"><code class="varname">max_active_replication_origins</code></a> must be set to at least the number of subscriptions that will be added to the subscriber, plus some reserve for table synchronization.</p>
+    <p><a class="link" href="runtime-config-replication.html#GUC-MAX-LOGICAL-REPLICATION-WORKERS"><code class="varname">max_logical_replication_workers</code></a> must be set to at least the number of subscriptions (for leader apply workers), plus some reserve for the table synchronization workers and parallel apply workers.</p>
+    <p><a class="link" href="runtime-config-resource.html#GUC-MAX-WORKER-PROCESSES"><code class="varname">max_worker_processes</code></a> may need to be adjusted to accommodate for replication workers, at least (<a class="link" href="runtime-config-replication.html#GUC-MAX-LOGICAL-REPLICATION-WORKERS"><code class="varname">max_logical_replication_workers</code></a> + <code class="literal">1</code>). Note, some extensions and parallel queries also take worker slots from <code class="varname">max_worker_processes</code>.</p>
+    <p><a class="link" href="runtime-config-replication.html#GUC-MAX-SYNC-WORKERS-PER-SUBSCRIPTION"><code class="varname">max_sync_workers_per_subscription</code></a> controls the amount of parallelism of the initial data copy during the subscription initialization or when new tables are added.</p>
+    <p><a class="link" href="runtime-config-replication.html#GUC-MAX-PARALLEL-APPLY-WORKERS-PER-SUBSCRIPTION"><code class="varname">max_parallel_apply_workers_per_subscription</code></a> controls the amount of parallelism for streaming of in-progress transactions with subscription parameter <code class="literal">streaming = parallel</code>.</p>
+    <p>Logical replication workers are also affected by <a class="link" href="runtime-config-replication.html#GUC-WAL-RECEIVER-TIMEOUT"><code class="varname">wal_receiver_timeout</code></a>, <a class="link" href="runtime-config-replication.html#GUC-WAL-RECEIVER-STATUS-INTERVAL"><code class="varname">wal_receiver_status_interval</code></a> and <a class="link" href="runtime-config-replication.html#GUC-WAL-RETRIEVE-RETRY-INTERVAL"><code class="varname">wal_retrieve_retry_interval</code></a>.</p>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="logical-replication-security.html" title="29.11.&nbsp;Security">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="logical-replication.html" title="Chapter&nbsp;29.&nbsp;Logical Replication">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="logical-replication-upgrade.html" title="29.13.&nbsp;Upgrade">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">29.11.&nbsp;Security&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;29.13.&nbsp;Upgrade</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/logical-replication-config.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

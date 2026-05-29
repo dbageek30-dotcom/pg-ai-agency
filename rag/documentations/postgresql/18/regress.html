@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: Chapter 31. Regression Tests</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/regress.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="Chapter 31. Regression Tests" />
+  <meta property="og:description" content="Chapter&amp;nbsp;31.&amp;nbsp;Regression Tests Table of Contents 31.1. Running the Tests 31.1.1. Running the Tests Against a Temporary Installation 31.1.2. Running the …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/regress.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/regress.html" title="PostgreSQL 18 - Chapter 31. Regression Tests" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/regress.html" title="PostgreSQL 18 - Chapter 31. Regression Tests" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/regress.html" title="PostgreSQL 17 - Chapter 31. Regression Tests" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/regress.html" title="PostgreSQL 16 - Chapter 31. Regression Tests" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/regress.html" title="PostgreSQL 15 - Chapter 31. Regression Tests" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/regress.html" title="PostgreSQL 14 - Chapter 31. Regression Tests" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/regress.html" title="PostgreSQL devel - Chapter 31. Regression Tests"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/regress.html" title="PostgreSQL 13 - Chapter 31. Regression Tests"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/regress.html" title="PostgreSQL 12 - Chapter 31. Regression Tests"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/regress.html" title="PostgreSQL 11 - Chapter 31. Regression Tests"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/regress.html" title="PostgreSQL 10 - Chapter 31. Regression Tests"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/regress.html" title="PostgreSQL 9.6 - Chapter 31. Regression Tests"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/regress.html" title="PostgreSQL 9.5 - Chapter 31. Regression Tests"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/regress.html" title="PostgreSQL 9.4 - Chapter 31. Regression Tests"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/regress.html" title="PostgreSQL 9.3 - Chapter 31. Regression Tests"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/regress.html" title="PostgreSQL 9.2 - Chapter 31. Regression Tests"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/regress.html" title="PostgreSQL 9.1 - Chapter 31. Regression Tests"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/regress.html" title="PostgreSQL 9.0 - Chapter 31. Regression Tests"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/regress.html" title="PostgreSQL 8.4 - Chapter 31. Regression Tests"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/regress.html" title="PostgreSQL 8.3 - Chapter 31. Regression Tests"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/regress.html" title="PostgreSQL 8.2 - Chapter 31. Regression Tests"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/regress.html" title="PostgreSQL 8.1 - Chapter 31. Regression Tests"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/regress.html" title="PostgreSQL 8.0 - Chapter 31. Regression Tests"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/regress.html" title="PostgreSQL 7.4 - Chapter 31. Regression Tests"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/regress.html" title="PostgreSQL 7.3 - Chapter 31. Regression Tests"  rel="nofollow">7.3</a>
+                    
+                       / 
+                      <a href="/docs/7.2/regress.html" title="PostgreSQL 7.2 - Chapter 31. Regression Tests"  rel="nofollow">7.2</a>
+                    
+                       / 
+                      <a href="/docs/7.1/regress.html" title="PostgreSQL 7.1 - Chapter 31. Regression Tests"  rel="nofollow">7.1</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">Chapter&nbsp;31.&nbsp;Regression Tests</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="jit-extensibility.html" title="30.4.&nbsp;Extensibility">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="admin.html" title="Part&nbsp;III.&nbsp;Server Administration">Up</a></td>
+      <th width="60%" align="center">Part&nbsp;III.&nbsp;Server Administration</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="regress-run.html" title="31.1.&nbsp;Running the Tests">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="chapter" id="REGRESS">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title">Chapter&nbsp;31.&nbsp;Regression Tests</h2>
+      </div>
+    </div>
+  </div>
+  <div class="toc">
+    <p><strong>Table of Contents</strong></p>
+    <dl class="toc">
+      <dt><span class="sect1"><a href="regress-run.html">31.1. Running the Tests</a></span></dt>
+      <dd>
+        <dl>
+          <dt><span class="sect2"><a href="regress-run.html#REGRESS-RUN-TEMP-INST">31.1.1. Running the Tests Against a Temporary Installation</a></span></dt>
+          <dt><span class="sect2"><a href="regress-run.html#REGRESS-RUN-EXISTING-INST">31.1.2. Running the Tests Against an Existing Installation</a></span></dt>
+          <dt><span class="sect2"><a href="regress-run.html#REGRESS-ADDITIONAL">31.1.3. Additional Test Suites</a></span></dt>
+          <dt><span class="sect2"><a href="regress-run.html#REGRESS-RUN-LOCALE">31.1.4. Locale and Encoding</a></span></dt>
+          <dt><span class="sect2"><a href="regress-run.html#REGRESS-RUN-CUSTOM-SETTINGS">31.1.5. Custom Server Settings</a></span></dt>
+          <dt><span class="sect2"><a href="regress-run.html#REGRESS-RUN-EXTRA-TESTS">31.1.6. Extra Tests</a></span></dt>
+        </dl>
+      </dd>
+      <dt><span class="sect1"><a href="regress-evaluation.html">31.2. Test Evaluation</a></span></dt>
+      <dd>
+        <dl>
+          <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-MESSAGE-DIFFERENCES">31.2.1. Error Message Differences</a></span></dt>
+          <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-LOCALE-DIFFERENCES">31.2.2. Locale Differences</a></span></dt>
+          <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-DATE-TIME-DIFFERENCES">31.2.3. Date and Time Differences</a></span></dt>
+          <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-FLOAT-DIFFERENCES">31.2.4. Floating-Point Differences</a></span></dt>
+          <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-ORDERING-DIFFERENCES">31.2.5. Row Ordering Differences</a></span></dt>
+          <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-STACK-DEPTH">31.2.6. Insufficient Stack Depth</a></span></dt>
+          <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-RANDOM-TEST">31.2.7. The <span class="quote">“<span class="quote">random</span>”</span> Test</a></span></dt>
+          <dt><span class="sect2"><a href="regress-evaluation.html#REGRESS-EVALUATION-CONFIG-PARAMS">31.2.8. Configuration Parameters</a></span></dt>
+        </dl>
+      </dd>
+      <dt><span class="sect1"><a href="regress-variant.html">31.3. Variant Comparison Files</a></span></dt>
+      <dt><span class="sect1"><a href="regress-tap.html">31.4. TAP Tests</a></span></dt>
+      <dd>
+        <dl>
+          <dt><span class="sect2"><a href="regress-tap.html#REGRESS-TAP-VARS">31.4.1. Environment Variables</a></span></dt>
+        </dl>
+      </dd>
+      <dt><span class="sect1"><a href="regress-coverage.html">31.5. Test Coverage Examination</a></span></dt>
+      <dd>
+        <dl>
+          <dt><span class="sect2"><a href="regress-coverage.html#REGRESS-COVERAGE-CONFIGURE">31.5.1. Coverage with Autoconf and Make</a></span></dt>
+          <dt><span class="sect2"><a href="regress-coverage.html#REGRESS-COVERAGE-MESON">31.5.2. Coverage with Meson</a></span></dt>
+        </dl>
+      </dd>
+    </dl>
+  </div><a id="id-1.6.18.2" class="indexterm" name="id-1.6.18.2"></a><a id="id-1.6.18.3" class="indexterm" name="id-1.6.18.3"></a>
+  <p>The regression tests are a comprehensive set of tests for the SQL implementation in <span class="productname">PostgreSQL</span>. They test standard SQL operations as well as the extended capabilities of <span class="productname">PostgreSQL</span>.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="jit-extensibility.html" title="30.4.&nbsp;Extensibility">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="admin.html" title="Part&nbsp;III.&nbsp;Server Administration">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="regress-run.html" title="31.1.&nbsp;Running the Tests">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">30.4.&nbsp;Extensibility&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;31.1.&nbsp;Running the Tests</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/regress.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

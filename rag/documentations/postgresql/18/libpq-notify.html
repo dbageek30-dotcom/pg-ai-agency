@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 32.9. Asynchronous Notification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/libpq-notify.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="32.9. Asynchronous Notification" />
+  <meta property="og:description" content="32.9.&amp;nbsp;Asynchronous Notification # PostgreSQL offers asynchronous notification via the LISTEN and NOTIFY commands. A client session registers its interest in …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/libpq-notify.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/libpq-notify.html" title="PostgreSQL 18 - 32.9. Asynchronous Notification" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/libpq-notify.html" title="PostgreSQL 18 - 32.9. Asynchronous Notification" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/libpq-notify.html" title="PostgreSQL 17 - 32.9. Asynchronous Notification" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/libpq-notify.html" title="PostgreSQL 16 - 32.9. Asynchronous Notification" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/libpq-notify.html" title="PostgreSQL 15 - 32.9. Asynchronous Notification" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/libpq-notify.html" title="PostgreSQL 14 - 32.9. Asynchronous Notification" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/libpq-notify.html" title="PostgreSQL devel - 32.9. Asynchronous Notification"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/libpq-notify.html" title="PostgreSQL 13 - 32.9. Asynchronous Notification"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/libpq-notify.html" title="PostgreSQL 12 - 32.9. Asynchronous Notification"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/libpq-notify.html" title="PostgreSQL 11 - 32.9. Asynchronous Notification"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/libpq-notify.html" title="PostgreSQL 10 - 32.9. Asynchronous Notification"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/libpq-notify.html" title="PostgreSQL 9.6 - 32.9. Asynchronous Notification"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/libpq-notify.html" title="PostgreSQL 9.5 - 32.9. Asynchronous Notification"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/libpq-notify.html" title="PostgreSQL 9.4 - 32.9. Asynchronous Notification"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/libpq-notify.html" title="PostgreSQL 9.3 - 32.9. Asynchronous Notification"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/libpq-notify.html" title="PostgreSQL 9.2 - 32.9. Asynchronous Notification"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/libpq-notify.html" title="PostgreSQL 9.1 - 32.9. Asynchronous Notification"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/libpq-notify.html" title="PostgreSQL 9.0 - 32.9. Asynchronous Notification"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/libpq-notify.html" title="PostgreSQL 8.4 - 32.9. Asynchronous Notification"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/libpq-notify.html" title="PostgreSQL 8.3 - 32.9. Asynchronous Notification"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/libpq-notify.html" title="PostgreSQL 8.2 - 32.9. Asynchronous Notification"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/libpq-notify.html" title="PostgreSQL 8.1 - 32.9. Asynchronous Notification"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/libpq-notify.html" title="PostgreSQL 8.0 - 32.9. Asynchronous Notification"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/libpq-notify.html" title="PostgreSQL 7.4 - 32.9. Asynchronous Notification"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/libpq-notify.html" title="PostgreSQL 7.3 - 32.9. Asynchronous Notification"  rel="nofollow">7.3</a>
+                    
+                       / 
+                      <a href="/docs/7.2/libpq-notify.html" title="PostgreSQL 7.2 - 32.9. Asynchronous Notification"  rel="nofollow">7.2</a>
+                    
+                       / 
+                      <a href="/docs/7.1/libpq-notify.html" title="PostgreSQL 7.1 - 32.9. Asynchronous Notification"  rel="nofollow">7.1</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">32.9.&nbsp;Asynchronous Notification</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="libpq-fastpath.html" title="32.8.&nbsp;The Fast-Path Interface">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter&nbsp;32.&nbsp;libpq — C Library">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;32.&nbsp;<span class="application">libpq</span> — C Library</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="libpq-copy.html" title="32.10.&nbsp;Functions Associated with the COPY Command">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="LIBPQ-NOTIFY">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">32.9.&nbsp;Asynchronous Notification <a href="#LIBPQ-NOTIFY" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div><a id="id-1.7.3.16.2" class="indexterm" name="id-1.7.3.16.2"></a>
+  <p><span class="productname">PostgreSQL</span> offers asynchronous notification via the <code class="command">LISTEN</code> and <code class="command">NOTIFY</code> commands. A client session registers its interest in a particular notification channel with the <code class="command">LISTEN</code> command (and can stop listening with the <code class="command">UNLISTEN</code> command). All sessions listening on a particular channel will be notified asynchronously when a <code class="command">NOTIFY</code> command with that channel name is executed by any session. A <span class="quote">“<span class="quote">payload</span>”</span> string can be passed to communicate additional data to the listeners.</p>
+  <p><span class="application">libpq</span> applications submit <code class="command">LISTEN</code>, <code class="command">UNLISTEN</code>, and <code class="command">NOTIFY</code> commands as ordinary SQL commands. The arrival of <code class="command">NOTIFY</code> messages can subsequently be detected by calling <code class="function" id="LIBPQ-PQNOTIFIES">PQnotifies</code>.<a id="id-1.7.3.16.4.7" class="indexterm" name="id-1.7.3.16.4.7"></a></p>
+  <p>The function <code class="function">PQnotifies</code> returns the next notification from a list of unhandled notification messages received from the server. It returns a null pointer if there are no pending notifications. Once a notification is returned from <code class="function">PQnotifies</code>, it is considered handled and will be removed from the list of notifications.</p>
+  <pre class="synopsis">
+PGnotify *PQnotifies(PGconn *conn);
+
+typedef struct pgNotify
+{
+    char *relname;              /* notification channel name */
+    int  be_pid;                /* process ID of notifying server process */
+    char *extra;                /* notification payload string */
+} PGnotify;
+</pre>
+  <p>After processing a <code class="structname">PGnotify</code> object returned by <code class="function">PQnotifies</code>, be sure to free it with <a class="xref" href="libpq-misc.html#LIBPQ-PQFREEMEM"><code class="function">PQfreemem</code></a>. It is sufficient to free the <code class="structname">PGnotify</code> pointer; the <code class="structfield">relname</code> and <code class="structfield">extra</code> fields do not represent separate allocations. (The names of these fields are historical; in particular, channel names need not have anything to do with relation names.)</p>
+  <p><a class="xref" href="libpq-example.html#LIBPQ-EXAMPLE-2" title="Example&nbsp;32.2.&nbsp;libpq Example Program 2">Example&nbsp;32.2</a> gives a sample program that illustrates the use of asynchronous notification.</p>
+  <p><code class="function">PQnotifies</code> does not actually read data from the server; it just returns messages previously absorbed by another <span class="application">libpq</span> function. In ancient releases of <span class="application">libpq</span>, the only way to ensure timely receipt of <code class="command">NOTIFY</code> messages was to constantly submit commands, even empty ones, and then check <code class="function">PQnotifies</code> after each <a class="xref" href="libpq-exec.html#LIBPQ-PQEXEC"><code class="function">PQexec</code></a>. While this still works, it is deprecated as a waste of processing power.</p>
+  <p>A better way to check for <code class="command">NOTIFY</code> messages when you have no useful commands to execute is to call <a class="xref" href="libpq-async.html#LIBPQ-PQCONSUMEINPUT"><code class="function">PQconsumeInput</code></a> , then check <code class="function">PQnotifies</code>. You can use <code class="function">select()</code> to wait for data to arrive from the server, thereby using no <acronym class="acronym">CPU</acronym> power unless there is something to do. (See <a class="xref" href="libpq-status.html#LIBPQ-PQSOCKET"><code class="function">PQsocket</code></a> to obtain the file descriptor number to use with <code class="function">select()</code>.) Note that this will work OK whether you submit commands with <a class="xref" href="libpq-async.html#LIBPQ-PQSENDQUERY"><code class="function">PQsendQuery</code></a>/<a class="xref" href="libpq-async.html#LIBPQ-PQGETRESULT"><code class="function">PQgetResult</code></a> or simply use <a class="xref" href="libpq-exec.html#LIBPQ-PQEXEC"><code class="function">PQexec</code></a>. You should, however, remember to check <code class="function">PQnotifies</code> after each <a class="xref" href="libpq-async.html#LIBPQ-PQGETRESULT"><code class="function">PQgetResult</code></a> or <a class="xref" href="libpq-exec.html#LIBPQ-PQEXEC"><code class="function">PQexec</code></a>, to see if any notifications came in during the processing of the command.</p>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="libpq-fastpath.html" title="32.8.&nbsp;The Fast-Path Interface">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter&nbsp;32.&nbsp;libpq — C Library">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="libpq-copy.html" title="32.10.&nbsp;Functions Associated with the COPY Command">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">32.8.&nbsp;The Fast-Path Interface&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;32.10.&nbsp;Functions Associated with the <code class="command">COPY</code> Command</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/libpq-notify.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>

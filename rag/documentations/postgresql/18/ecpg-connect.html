@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>PostgreSQL: Documentation: 18: 34.2. Managing Database Connections</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+   
+  <meta name="theme-color" content="#336791"/>
+  <meta name="copyright" content="The PostgreSQL Global Development Group" />
+  <meta property="og:url" content="https://www.postgresql.org/docs/18/ecpg-connect.html" />
+  <meta property="og:type" content="article" />
+
+  <meta property="article:published_time" content="2026-02-26T14:07:09" />
+  <meta property="og:image" content="https://www.postgresql.org/media/img/about/press/elephant.png" />
+  <meta property="og:title" content="34.2. Managing Database Connections" />
+  <meta property="og:description" content="34.2.&amp;nbsp;Managing Database Connections # 34.2.1. Connecting to the Database Server 34.2.2. Choosing a Connection 34.2.3. Closing a Connection This section …" />
+  <meta property="og:site_name" content="PostgreSQL Documentation" />
+  <link href="/media/css/fontawesome.css?2b59c9c1" rel="stylesheet">
+  <link rel="stylesheet" href="/media/css/bootstrap-4.4.1.min.css">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  
+  <link rel="stylesheet" type="text/css" href="/dyncss/base.css?2b59c9c1">
+
+  <script src="/media/js/theme.js?2b59c9c1"></script>
+
+  
+
+
+  <link rel="canonical" href="https://www.postgresql.org/docs/current/ecpg-connect.html" />
+
+
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row justify-content-md-center">
+        <div class="col">
+          <!-- Header -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand p-0" href="/">
+              <img class="logo" src="/media/img/about/press/elephant.png" alt="PostgreSQL Elephant Logo">
+            </a>
+            <input type="checkbox" id="navbar-toggler" aria-controls="pgNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <label for="navbar-toggler" id="navbar-toggler-label" class="navbar-toggler" tabindex="0"><span class="navbar-toggler-icon"></span></label>
+            <div class="navbar-collapse" id="pgNavbar">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item p-2"><a href="/" title="Home">Home</a></li>
+                <li class="nav-item p-2"><a href="/about/" title="About">About</a></li>
+                <li class="nav-item p-2"><a href="/download/" title="Download">Download</a></li>
+                <li class="nav-item p-2"><a href="/docs/" title="Documentation">Documentation</a></li>
+                <li class="nav-item p-2"><a href="/community/" title="Community">Community</a></li>
+                <li class="nav-item p-2"><a href="/developer/" title="Developers">Developers</a></li>
+                <li class="nav-item p-2"><a href="/support/" title="Support">Support</a></li>
+                <li class="nav-item p-2"><a href="/about/donate/" title="Donate">Donate</a></li>
+                <li class="nav-item p-2"><a href="/account/" title="Your account">Your account</a></li>
+              </ul>
+              <form role="search" method="get" action="/search/">
+                <div class="input-group">
+                  <input id="q" name="q" type="text" size="20" maxlength="255" accesskey="s"  class="form-control" placeholder="Search for...">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+              <form id="form-theme" class="form-inline d-none">
+                <button id="btn-theme" class="btn btn-default ml-1" type="button"></button>
+              </form>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div class="row justify-content-center pg-shout-box">
+        <div class="col text-white text-center">February 26, 2026: <a href="/about/news/postgresql-183-179-1613-1517-and-1422-released-3246/">
+  PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released!
+</a>
+</div>
+      </div>
+    </div>
+    
+    <div class="container-fluid margin">
+      <div class="row">
+        <div id="pgContentWrap" class="col-11">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="row">
+                <div class="col">
+                  <div>
+                    <a href="/docs/" title="Documentation">Documentation</a> &rarr; <a href="/docs/18/index.html">PostgreSQL 18</a>
+                  </div>
+                </div>
+              </div>
+              
+                <div class="row">
+                  <div class="col">
+                    Supported Versions:
+                      
+                        
+                        
+                          <a href="/docs/current/ecpg-connect.html" title="PostgreSQL 18 - 34.2. Managing Database Connections" class="docs-version-selected">Current</a>
+                          (<a href="/docs/18/ecpg-connect.html" title="PostgreSQL 18 - 34.2. Managing Database Connections" class="docs-version-selected">18</a>)
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/17/ecpg-connect.html" title="PostgreSQL 17 - 34.2. Managing Database Connections" >17</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/16/ecpg-connect.html" title="PostgreSQL 16 - 34.2. Managing Database Connections" >16</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/15/ecpg-connect.html" title="PostgreSQL 15 - 34.2. Managing Database Connections" >15</a>
+                        
+                      
+                         / 
+                        
+                          <a href="/docs/14/ecpg-connect.html" title="PostgreSQL 14 - 34.2. Managing Database Connections" >14</a>
+                        
+                      
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col">
+                    Development Versions:
+                    
+                      
+                      <a href="/docs/devel/ecpg-connect.html" title="PostgreSQL devel - 34.2. Managing Database Connections"  rel="nofollow">devel</a>
+                    
+                  </div>
+                </div>
+              
+              
+                <div class="row">
+                  <div class="col-12">
+                    Unsupported versions:
+                    
+                      
+                      <a href="/docs/13/ecpg-connect.html" title="PostgreSQL 13 - 34.2. Managing Database Connections"  rel="nofollow">13</a>
+                    
+                       / 
+                      <a href="/docs/12/ecpg-connect.html" title="PostgreSQL 12 - 34.2. Managing Database Connections"  rel="nofollow">12</a>
+                    
+                       / 
+                      <a href="/docs/11/ecpg-connect.html" title="PostgreSQL 11 - 34.2. Managing Database Connections"  rel="nofollow">11</a>
+                    
+                       / 
+                      <a href="/docs/10/ecpg-connect.html" title="PostgreSQL 10 - 34.2. Managing Database Connections"  rel="nofollow">10</a>
+                    
+                       / 
+                      <a href="/docs/9.6/ecpg-connect.html" title="PostgreSQL 9.6 - 34.2. Managing Database Connections"  rel="nofollow">9.6</a>
+                    
+                       / 
+                      <a href="/docs/9.5/ecpg-connect.html" title="PostgreSQL 9.5 - 34.2. Managing Database Connections"  rel="nofollow">9.5</a>
+                    
+                       / 
+                      <a href="/docs/9.4/ecpg-connect.html" title="PostgreSQL 9.4 - 34.2. Managing Database Connections"  rel="nofollow">9.4</a>
+                    
+                       / 
+                      <a href="/docs/9.3/ecpg-connect.html" title="PostgreSQL 9.3 - 34.2. Managing Database Connections"  rel="nofollow">9.3</a>
+                    
+                       / 
+                      <a href="/docs/9.2/ecpg-connect.html" title="PostgreSQL 9.2 - 34.2. Managing Database Connections"  rel="nofollow">9.2</a>
+                    
+                       / 
+                      <a href="/docs/9.1/ecpg-connect.html" title="PostgreSQL 9.1 - 34.2. Managing Database Connections"  rel="nofollow">9.1</a>
+                    
+                       / 
+                      <a href="/docs/9.0/ecpg-connect.html" title="PostgreSQL 9.0 - 34.2. Managing Database Connections"  rel="nofollow">9.0</a>
+                    
+                       / 
+                      <a href="/docs/8.4/ecpg-connect.html" title="PostgreSQL 8.4 - 34.2. Managing Database Connections"  rel="nofollow">8.4</a>
+                    
+                       / 
+                      <a href="/docs/8.3/ecpg-connect.html" title="PostgreSQL 8.3 - 34.2. Managing Database Connections"  rel="nofollow">8.3</a>
+                    
+                       / 
+                      <a href="/docs/8.2/ecpg-connect.html" title="PostgreSQL 8.2 - 34.2. Managing Database Connections"  rel="nofollow">8.2</a>
+                    
+                       / 
+                      <a href="/docs/8.1/ecpg-connect.html" title="PostgreSQL 8.1 - 34.2. Managing Database Connections"  rel="nofollow">8.1</a>
+                    
+                       / 
+                      <a href="/docs/8.0/ecpg-connect.html" title="PostgreSQL 8.0 - 34.2. Managing Database Connections"  rel="nofollow">8.0</a>
+                    
+                       / 
+                      <a href="/docs/7.4/ecpg-connect.html" title="PostgreSQL 7.4 - 34.2. Managing Database Connections"  rel="nofollow">7.4</a>
+                    
+                       / 
+                      <a href="/docs/7.3/ecpg-connect.html" title="PostgreSQL 7.3 - 34.2. Managing Database Connections"  rel="nofollow">7.3</a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+            <div class="col-md-6 col-lg-5 offset-lg-1">
+              <form id="docSearchForm" role="search" method="get" action="/search/">
+                <input type="hidden" name="u" value="/docs/18/" />
+                <div class="input-group">
+                  <input type="text" id="q" name="q" class="form-control" placeholder="Search the documentation for..."/>
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
+                  </span>
+                </div><!-- /input-group -->
+              </form>
+            </div>
+          </div>
+
+          <div id="docContent">
+            <div class="navheader">
+  <table width="100%" summary="Navigation header">
+    <tr>
+      <th colspan="5" align="center">34.2.&nbsp;Managing Database Connections</th>
+    </tr>
+    <tr>
+      <td width="10%" align="left"><a accesskey="p" href="ecpg-concept.html" title="34.1.&nbsp;The Concept">Prev</a>&nbsp;</td>
+      <td width="10%" align="left"><a accesskey="u" href="ecpg.html" title="Chapter&nbsp;34.&nbsp;ECPG — Embedded SQL in C">Up</a></td>
+      <th width="60%" align="center">Chapter&nbsp;34.&nbsp;<span class="application">ECPG</span> — Embedded <acronym class="acronym">SQL</acronym> in C</th>
+      <td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="10%" align="right">&nbsp;<a accesskey="n" href="ecpg-commands.html" title="34.3.&nbsp;Running SQL Commands">Next</a></td>
+    </tr>
+  </table>
+  <hr />
+</div>
+<div class="sect1" id="ECPG-CONNECT">
+  <div class="titlepage">
+    <div>
+      <div>
+        <h2 class="title" style="clear: both">34.2.&nbsp;Managing Database Connections <a href="#ECPG-CONNECT" class="id_link">#</a></h2>
+      </div>
+    </div>
+  </div>
+  <div class="toc">
+    <dl class="toc">
+      <dt><span class="sect2"><a href="ecpg-connect.html#ECPG-CONNECTING">34.2.1. Connecting to the Database Server</a></span></dt>
+      <dt><span class="sect2"><a href="ecpg-connect.html#ECPG-SET-CONNECTION">34.2.2. Choosing a Connection</a></span></dt>
+      <dt><span class="sect2"><a href="ecpg-connect.html#ECPG-DISCONNECT">34.2.3. Closing a Connection</a></span></dt>
+    </dl>
+  </div>
+  <p>This section describes how to open, close, and switch database connections.</p>
+  <div class="sect2" id="ECPG-CONNECTING">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">34.2.1.&nbsp;Connecting to the Database Server <a href="#ECPG-CONNECTING" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>One connects to a database using the following statement:</p>
+    <pre class="programlisting">
+EXEC SQL CONNECT TO <em class="replaceable"><code>target</code></em> [<span class="optional">AS <em class="replaceable"><code>connection-name</code></em></span>] [<span class="optional">USER <em class="replaceable"><code>user-name</code></em></span>];
+</pre>
+    <p>The <em class="replaceable"><code>target</code></em> can be specified in the following ways:</p>
+    <div class="itemizedlist">
+      <ul class="itemizedlist" style="list-style-type: disc;">
+        <li class="listitem"><code class="literal"><em class="replaceable"><code>dbname</code></em>[<span class="optional">@<em class="replaceable"><code>hostname</code></em></span>][<span class="optional">:<em class="replaceable"><code>port</code></em></span>]</code></li>
+        <li class="listitem"><code class="literal">tcp:postgresql://<em class="replaceable"><code>hostname</code></em>[<span class="optional">:<em class="replaceable"><code>port</code></em></span>][<span class="optional">/<em class="replaceable"><code>dbname</code></em></span>][<span class="optional">?<em class="replaceable"><code>options</code></em></span>]</code></li>
+        <li class="listitem"><code class="literal">unix:postgresql://localhost[<span class="optional">:<em class="replaceable"><code>port</code></em></span>][<span class="optional">/<em class="replaceable"><code>dbname</code></em></span>][<span class="optional">?<em class="replaceable"><code>options</code></em></span>]</code></li>
+        <li class="listitem">an SQL string literal containing one of the above forms</li>
+        <li class="listitem">a reference to a character variable containing one of the above forms (see examples)</li>
+        <li class="listitem"><code class="literal">DEFAULT</code></li>
+      </ul>
+    </div>
+    <p>The connection target <code class="literal">DEFAULT</code> initiates a connection to the default database under the default user name. No separate user name or connection name can be specified in that case.</p>
+    <p>If you specify the connection target directly (that is, not as a string literal or variable reference), then the components of the target are passed through normal SQL parsing; this means that, for example, the <em class="replaceable"><code>hostname</code></em> must look like one or more SQL identifiers separated by dots, and those identifiers will be case-folded unless double-quoted. Values of any <em class="replaceable"><code>options</code></em> must be SQL identifiers, integers, or variable references. Of course, you can put nearly anything into an SQL identifier by double-quoting it. In practice, it is probably less error-prone to use a (single-quoted) string literal or a variable reference than to write the connection target directly.</p>
+    <p>There are also different ways to specify the user name:</p>
+    <div class="itemizedlist">
+      <ul class="itemizedlist" style="list-style-type: disc;">
+        <li class="listitem"><code class="literal"><em class="replaceable"><code>username</code></em></code></li>
+        <li class="listitem"><code class="literal"><em class="replaceable"><code>username</code></em>/<em class="replaceable"><code>password</code></em></code></li>
+        <li class="listitem"><code class="literal"><em class="replaceable"><code>username</code></em> IDENTIFIED BY <em class="replaceable"><code>password</code></em></code></li>
+        <li class="listitem"><code class="literal"><em class="replaceable"><code>username</code></em> USING <em class="replaceable"><code>password</code></em></code></li>
+      </ul>
+    </div>
+    <p>As above, the parameters <em class="replaceable"><code>username</code></em> and <em class="replaceable"><code>password</code></em> can be an SQL identifier, an SQL string literal, or a reference to a character variable.</p>
+    <p>If the connection target includes any <em class="replaceable"><code>options</code></em>, those consist of <code class="literal"><em class="replaceable"><code>keyword</code></em>=<em class="replaceable"><code>value</code></em></code> specifications separated by ampersands (<code class="literal">&amp;</code>). The allowed key words are the same ones recognized by <span class="application">libpq</span> (see <a class="xref" href="libpq-connect.html#LIBPQ-PARAMKEYWORDS" title="32.1.2.&nbsp;Parameter Key Words">Section&nbsp;32.1.2</a>). Spaces are ignored before any <em class="replaceable"><code>keyword</code></em> or <em class="replaceable"><code>value</code></em>, though not within or after one. Note that there is no way to write <code class="literal">&amp;</code> within a <em class="replaceable"><code>value</code></em>.</p>
+    <p>Notice that when specifying a socket connection (with the <code class="literal">unix:</code> prefix), the host name must be exactly <code class="literal">localhost</code>. To select a non-default socket directory, write the directory's pathname as the value of a <code class="varname">host</code> option in the <em class="replaceable"><code>options</code></em> part of the target.</p>
+    <p>The <em class="replaceable"><code>connection-name</code></em> is used to handle multiple connections in one program. It can be omitted if a program uses only one connection. The most recently opened connection becomes the current connection, which is used by default when an SQL statement is to be executed (see later in this chapter).</p>
+    <p>Here are some examples of <code class="command">CONNECT</code> statements:</p>
+    <pre class="programlisting">
+EXEC SQL CONNECT TO mydb@sql.mydomain.com;
+
+EXEC SQL CONNECT TO tcp:postgresql://sql.mydomain.com/mydb AS myconnection USER john;
+
+EXEC SQL BEGIN DECLARE SECTION;
+const char *target = "mydb@sql.mydomain.com";
+const char *user = "john";
+const char *passwd = "secret";
+EXEC SQL END DECLARE SECTION;
+ ...
+EXEC SQL CONNECT TO :target USER :user USING :passwd;
+/* or EXEC SQL CONNECT TO :target USER :user/:passwd; */
+</pre>
+    <p>The last example makes use of the feature referred to above as character variable references. You will see in later sections how C variables can be used in SQL statements when you prefix them with a colon.</p>
+    <p>Be advised that the format of the connection target is not specified in the SQL standard. So if you want to develop portable applications, you might want to use something based on the last example above to encapsulate the connection target string somewhere.</p>
+    <p>If untrusted users have access to a database that has not adopted a <a class="link" href="ddl-schemas.html#DDL-SCHEMAS-PATTERNS" title="5.10.6.&nbsp;Usage Patterns">secure schema usage pattern</a>, begin each session by removing publicly-writable schemas from <code class="varname">search_path</code>. For example, add <code class="literal">options=-c search_path=</code> to <code class="literal"><em class="replaceable"><code>options</code></em></code>, or issue <code class="literal">EXEC SQL SELECT pg_catalog.set_config('search_path', '', false);</code> after connecting. This consideration is not specific to ECPG; it applies to every interface for executing arbitrary SQL commands.</p>
+  </div>
+  <div class="sect2" id="ECPG-SET-CONNECTION">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">34.2.2.&nbsp;Choosing a Connection <a href="#ECPG-SET-CONNECTION" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>SQL statements in embedded SQL programs are by default executed on the current connection, that is, the most recently opened one. If an application needs to manage multiple connections, then there are three ways to handle this.</p>
+    <p>The first option is to explicitly choose a connection for each SQL statement, for example:</p>
+    <pre class="programlisting">
+EXEC SQL AT <em class="replaceable"><code>connection-name</code></em> SELECT ...;
+</pre>
+    <p>This option is particularly suitable if the application needs to use several connections in mixed order.</p>
+    <p>If your application uses multiple threads of execution, they cannot share a connection concurrently. You must either explicitly control access to the connection (using mutexes) or use a connection for each thread.</p>
+    <p>The second option is to execute a statement to switch the current connection. That statement is:</p>
+    <pre class="programlisting">
+EXEC SQL SET CONNECTION <em class="replaceable"><code>connection-name</code></em>;
+</pre>
+    <p>This option is particularly convenient if many statements are to be executed on the same connection.</p>
+    <p>Here is an example program managing multiple database connections:</p>
+    <pre class="programlisting">
+#include &lt;stdio.h&gt;
+
+EXEC SQL BEGIN DECLARE SECTION;
+    char dbname[1024];
+EXEC SQL END DECLARE SECTION;
+
+int
+main()
+{
+    EXEC SQL CONNECT TO testdb1 AS con1 USER testuser;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+    EXEC SQL CONNECT TO testdb2 AS con2 USER testuser;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+    EXEC SQL CONNECT TO testdb3 AS con3 USER testuser;
+    EXEC SQL SELECT pg_catalog.set_config('search_path', '', false); EXEC SQL COMMIT;
+
+    /* This query would be executed in the last opened database "testdb3". */
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current=%s (should be testdb3)\n", dbname);
+
+    /* Using "AT" to run a query in "testdb2" */
+    EXEC SQL AT con2 SELECT current_database() INTO :dbname;
+    printf("current=%s (should be testdb2)\n", dbname);
+
+    /* Switch the current connection to "testdb1". */
+    EXEC SQL SET CONNECTION con1;
+
+    EXEC SQL SELECT current_database() INTO :dbname;
+    printf("current=%s (should be testdb1)\n", dbname);
+
+    EXEC SQL DISCONNECT ALL;
+    return 0;
+}
+</pre>
+    <p>This example would produce this output:</p>
+    <pre class="screen">
+current=testdb3 (should be testdb3)
+current=testdb2 (should be testdb2)
+current=testdb1 (should be testdb1)
+</pre>
+    <p>The third option is to declare an SQL identifier linked to the connection, for example:</p>
+    <pre class="programlisting">
+EXEC SQL AT <em class="replaceable"><code>connection-name</code></em> DECLARE <em class="replaceable"><code>statement-name</code></em> STATEMENT;
+EXEC SQL PREPARE <em class="replaceable"><code>statement-name</code></em> FROM :<em class="replaceable"><code>dyn-string</code></em>;
+</pre>
+    <p>Once you link an SQL identifier to a connection, you execute dynamic SQL without an AT clause. Note that this option behaves like preprocessor directives, therefore the link is enabled only in the file.</p>
+    <p>Here is an example program using this option:</p>
+    <pre class="programlisting">
+#include &lt;stdio.h&gt;
+
+EXEC SQL BEGIN DECLARE SECTION;
+char dbname[128];
+char *dyn_sql = "SELECT current_database()";
+EXEC SQL END DECLARE SECTION;
+
+int main(){
+  EXEC SQL CONNECT TO postgres AS con1;
+  EXEC SQL CONNECT TO testdb AS con2;
+  EXEC SQL AT con1 DECLARE stmt STATEMENT;
+  EXEC SQL PREPARE stmt FROM :dyn_sql;
+  EXEC SQL EXECUTE stmt INTO :dbname;
+  printf("%s\n", dbname);
+
+  EXEC SQL DISCONNECT ALL;
+  return 0;
+}
+</pre>
+    <p>This example would produce this output, even if the default connection is testdb:</p>
+    <pre class="screen">
+postgres
+</pre>
+  </div>
+  <div class="sect2" id="ECPG-DISCONNECT">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h3 class="title">34.2.3.&nbsp;Closing a Connection <a href="#ECPG-DISCONNECT" class="id_link">#</a></h3>
+        </div>
+      </div>
+    </div>
+    <p>To close a connection, use the following statement:</p>
+    <pre class="programlisting">
+EXEC SQL DISCONNECT [<span class="optional"><em class="replaceable"><code>connection</code></em></span>];
+</pre>
+    <p>The <em class="replaceable"><code>connection</code></em> can be specified in the following ways:</p>
+    <div class="itemizedlist">
+      <ul class="itemizedlist" style="list-style-type: disc;">
+        <li class="listitem"><code class="literal"><em class="replaceable"><code>connection-name</code></em></code></li>
+        <li class="listitem"><code class="literal">CURRENT</code></li>
+        <li class="listitem"><code class="literal">ALL</code></li>
+      </ul>
+    </div>
+    <p>If no connection name is specified, the current connection is closed.</p>
+    <p>It is good style that an application always explicitly disconnect from every connection it opened.</p>
+  </div>
+</div>
+<div class="navfooter">
+  <hr />
+  <table width="100%" summary="Navigation footer">
+    <tr>
+      <td width="40%" align="left"><a accesskey="p" href="ecpg-concept.html" title="34.1.&nbsp;The Concept">Prev</a>&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="u" href="ecpg.html" title="Chapter&nbsp;34.&nbsp;ECPG — Embedded SQL in C">Up</a></td>
+      <td width="40%" align="right">&nbsp;<a accesskey="n" href="ecpg-commands.html" title="34.3.&nbsp;Running SQL Commands">Next</a></td>
+    </tr>
+    <tr>
+      <td width="40%" align="left" valign="top">34.1.&nbsp;The Concept&nbsp;</td>
+      <td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 18.3 Documentation">Home</a></td>
+      <td width="40%" align="right" valign="top">&nbsp;34.3.&nbsp;Running SQL Commands</td>
+    </tr>
+  </table>
+</div>
+
+          </div>
+          
+            <div id="docComments">
+              <h2>Submit correction</h2>
+              <p>
+              If you see anything in the documentation that is not correct, does not match
+              your experience with the particular feature or requires further clarification,
+              please use
+              <a href="/account/comments/new/18/ecpg-connect.html/" rel="nofollow">this form</a>
+              to report a documentation issue.
+              </p>
+            </div>
+          
+        </div> <!-- pgContentWrap -->
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <!-- Copyright -->
+      <div class="container">
+        <a href="/about/policies/">Policies</a> |
+        <a href="/about/policies/coc/">Code of Conduct</a> |
+        <a href="/about/">About PostgreSQL</a> |
+        <a href="/about/contact/">Contact</a><br/>
+        <p>Copyright &copy; 1996-2026 The PostgreSQL Global Development Group</p>
+      </div>
+    </footer>
+    <script src="/media/js/main.js?2b59c9c1"></script>
+
+  </body>
+</html>
