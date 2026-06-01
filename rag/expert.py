@@ -74,7 +74,6 @@ def clear_history():
 def check_semantic_cache(query_embedding, distance_threshold=0.12):
     conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
     cur = conn.cursor()
-    # MODIFICATION : On récupère l'id de la table de cache
     cache_query = """
         SELECT id, question, response, (embedding <=> %s::vector) as distance 
         FROM rag.semantic_cache 
@@ -112,6 +111,38 @@ def delete_cache_entry(entry_id):
     except Exception as e:
         print(f"❌ [ERREUR DB] Impossible de supprimer l'entrée : {e}")
         return False
+
+# ---------------------------------------------------------------------------
+# INTERROGATION DU CATALOGUE SYSTEME (ANTI-HALLUCINATION)
+# ---------------------------------------------------------------------------
+def get_table_schema(table_name):
+    """Récupère la structure réelle de l'objet depuis le catalogue pour l'injecter au LLM"""
+    try:
+        conn = psycopg2.connect(dbname="postgres", user="postgres", password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        cur = conn.cursor()
+        
+        query = """
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = %s
+            ORDER BY ordinal_position;
+        """
+        cur.execute(query, (table_name,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        if rows:
+            schema_str = f"\n📊 [REAL SCHEMA FROM CATALOG] Structure actuelle de la vue/table '{table_name}' dans PostgreSQL 18 :\n"
+            for col, dtype in rows:
+                schema_str += f" - {col} ({dtype})\n"
+            schema_str += "CRITICAL RULE: You must ONLY use these columns if you write an SQL query regarding this table. Do NOT invent columns.\n"
+            return schema_str
+    except Exception as e:
+        if VERBOSE:
+            print(f"[DEBUG] Impossible de lire le catalogue pour {table_name}: {e}")
+        return ""
+    return ""
 
 # ---------------------------------------------------------------------------
 # COUCHE INTERPRÉTRATION DE LA QUESTION (QUERY REWRITER)
@@ -231,14 +262,25 @@ def ask_rag(question):
         save_message("assistant", cached_response)
         return cached_response + f"\n\n*(Généré depuis le Cache Permanent Postgres - [Cache ID: {cache_id}])*"
 
-    # 3. CACHE MISS : On cherche TOUJOURS un nouveau contexte adapté à la question !
+    # 3. CACHE MISS : Recherche de contexte documentaire RAG
     if VERBOSE:
         print("🔄 [RAG] Analyse et recherche vectorielle lancées...")
     
-    # On écrase systématiquement l'ancien contexte avec le nouveau sujet
     optimized_embed, CURRENT_CONTEXT = fetch_new_context(question, top_k_postgres=15, final_limit=3)
 
-    prompt_system = load_system_prompt("prompt_rag", CURRENT_CONTEXT)
+    # 4. ENRICHISSEMENT VIA CATALOGUE SYSTÈME (Vérification anti-hallucination des tables)
+    schema_enrichment = ""
+    target_tables = ["pg_stat_replication", "pg_stat_activity", "pg_stat_progress_vacuum", "pg_stat_database"]
+    for table in target_tables:
+        if table in question.lower():
+            if VERBOSE:
+                print(f"🔍 [CATALOG] Détection de '{table}'. Lecture de la structure réelle...")
+            schema_enrichment = get_table_schema(table)
+            break
+
+    # Combinaison de la documentation HTML et de la vraie structure des tables
+    extended_context = CURRENT_CONTEXT + "\n" + schema_enrichment
+    prompt_system = load_system_prompt("prompt_rag", extended_context)
     
     save_message("user", question)
     history = get_recent_history(limit=4)
@@ -267,10 +309,10 @@ if __name__ == "__main__":
     clear_history()
 
     print("\n" + "="*75)
-    print("🐘 POSTGRESQL 18 INTERACTIVE DBA CONSOLE - EXPERT V3.1")
-    print(f"   Mode verbeux : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}")
-    print("   Moteurs : Intent Query Rewriter + Cache Sémantique + Chirurgie du Cache 🔬")
-    print("   Commandes :  /c (clear)  |  /h (history)  |  /d [id] (delete cache item)  |  q (quitter)")
+    print("🐘 POSTGRESQL 18 INTERACTIVE DBA CONSOLE - EXPERT V3.2")
+    print(f"    Mode verbeux : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}")
+    print("    Moteurs : Intent Query Rewriter + Catalogue Enricher + Cache Sémantique 🔬")
+    print("    Commandes :  /c (clear)  |  /h (history)  |  /d [id] (delete cache item)  |  q (quitter)")
     print("="*75 + "\n")
 
     while True:
@@ -300,7 +342,6 @@ if __name__ == "__main__":
                 elif cmd == '/v':
                     VERBOSE = not VERBOSE
                     print(f"⚙️ [SYSTEM] Mode verbeux global : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}\n")
-                # NOUVELLE COMMANDE : CHIRURGIE DU CACHE PAR ID
                 elif cmd in ['/delete', '/d']:
                     if len(parts) < 2:
                         print("❌ [ERREUR] Syntaxe incorrecte. Utilisation : /d [ID_DU_CACHE] (ex: /d 14)\n")
