@@ -1,6 +1,7 @@
 import os
 import logging
 import psycopg2
+from psycopg2 import pool
 import argparse
 import sqlite3
 import json
@@ -32,6 +33,24 @@ CURRENT_CONTEXT = ""
 
 print(f"[INIT] ⚡ Chargement du Reranker CPU ({RERANK_MODEL})...")
 RANKER = Ranker(model_name=RERANK_MODEL, cache_dir="/tmp/flashrank")
+
+# ---------------------------------------------------------------------------
+# INITIALISATION DU POOL DE CONNEXIONS POSTGRESQL
+# ---------------------------------------------------------------------------
+try:
+    print("[INIT] 🐘 Initialisation du pool de connexions PostgreSQL...")
+    PG_POOL = psycopg2.pool.SimpleConnectionPool(
+        minconn=1,
+        maxconn=10,
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS,
+        host=DB_HOST,
+        port=DB_PORT
+    )
+except Exception as e:
+    print(f"❌ [ERREUR CRITIQUE] Impossible d'initialiser le pool de connexions : {e}")
+    exit(1)
 
 # ---------------------------------------------------------------------------
 # STRUCTURES DE SESSIONS ET CACHE
@@ -72,53 +91,73 @@ def clear_history():
     CURRENT_CONTEXT = ""
 
 def check_semantic_cache(query_embedding, distance_threshold=0.12):
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
-    cur = conn.cursor()
-    cache_query = """
-        SELECT id, question, response, (embedding <=> %s::vector) as distance 
-        FROM rag.semantic_cache 
-        WHERE (embedding <=> %s::vector) < %s
-        ORDER BY distance ASC LIMIT 1;
-    """
-    cur.execute(cache_query, (query_embedding, query_embedding, distance_threshold))
-    result = cur.fetchone()
-    cur.close()
-    conn.close()
-    return result
+    conn = None
+    try:
+        conn = PG_POOL.getconn()
+        cur = conn.cursor()
+        cache_query = """
+            SELECT id, question, response, (embedding <=> %s::vector) as distance 
+            FROM rag.semantic_cache 
+            WHERE (embedding <=> %s::vector) < %s
+            ORDER BY distance ASC LIMIT 1;
+        """
+        cur.execute(cache_query, (query_embedding, query_embedding, distance_threshold))
+        result = cur.fetchone()
+        cur.close()
+        return result
+    except Exception as e:
+        if VERBOSE:
+            print(f"[DEBUG] Erreur lors de la lecture du cache sémantique : {e}")
+        return None
+    finally:
+        if conn:
+            PG_POOL.putconn(conn)
 
 def save_to_semantic_cache(question, response_text, query_embedding):
+    conn = None
     try:
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = PG_POOL.getconn()
         cur = conn.cursor()
         cur.execute("INSERT INTO rag.semantic_cache (question, response, embedding) VALUES (%s, %s, %s::vector);", (question, response_text, query_embedding))
         conn.commit()
         cur.close()
-        conn.close()
-    except Exception:
-        pass
+    except Exception as e:
+        if VERBOSE:
+            print(f"[DEBUG] Erreur lors de l'écriture dans le cache sémantique : {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            PG_POOL.putconn(conn)
 
 def delete_cache_entry(entry_id):
     """Supprime une entrée spécifique du cache sémantique Postgres"""
+    conn = None
     try:
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = PG_POOL.getconn()
         cur = conn.cursor()
         cur.execute("DELETE FROM rag.semantic_cache WHERE id = %s;", (entry_id,))
         rows_deleted = cur.rowcount
         conn.commit()
         cur.close()
-        conn.close()
         return rows_deleted > 0
     except Exception as e:
         print(f"❌ [ERREUR DB] Impossible de supprimer l'entrée : {e}")
+        if conn:
+            conn.rollback()
         return False
+    finally:
+        if conn:
+            PG_POOL.putconn(conn)
 
 # ---------------------------------------------------------------------------
 # INTERROGATION DU CATALOGUE SYSTEME (ANTI-HALLUCINATION)
 # ---------------------------------------------------------------------------
 def get_table_schema(table_name):
     """Récupère la structure réelle de l'objet depuis le catalogue pour l'injecter au LLM"""
+    conn = None
     try:
-        conn = psycopg2.connect(dbname="postgres", user="postgres", password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = PG_POOL.getconn()
         cur = conn.cursor()
         
         query = """
@@ -130,7 +169,6 @@ def get_table_schema(table_name):
         cur.execute(query, (table_name,))
         rows = cur.fetchall()
         cur.close()
-        conn.close()
         
         if rows:
             schema_str = f"\n📊 [REAL SCHEMA FROM CATALOG] Structure actuelle de la vue/table '{table_name}' dans PostgreSQL 18 :\n"
@@ -142,6 +180,9 @@ def get_table_schema(table_name):
         if VERBOSE:
             print(f"[DEBUG] Impossible de lire le catalogue pour {table_name}: {e}")
         return ""
+    finally:
+        if conn:
+            PG_POOL.putconn(conn)
     return ""
 
 # ---------------------------------------------------------------------------
@@ -192,29 +233,40 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
     response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=optimized_search)
     optimized_embedding = response['embedding']
 
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
-    cur = conn.cursor()
-    
-    if keywords:
-        boost_conditions = " + ".join([f"(CASE WHEN content ILIKE %s THEN 0.2 ELSE 0 END)" for _ in keywords])
-        search_query = f"""
-            SELECT source, title, content, 
-                   ((embedding <=> %s::vector) - ({boost_conditions})) as distance 
-            FROM rag.documents 
-            ORDER BY distance ASC 
-            LIMIT %s;
-        """
-        query_params = [optimized_embedding] + [f"%{k}%" for k in keywords] + [top_k_postgres]
-        cur.execute(search_query, query_params)
-    else:
-        search_query = "SELECT source, title, content, (embedding <=> %s::vector) as distance FROM rag.documents ORDER BY distance ASC LIMIT %s;"
-        cur.execute(search_query, (optimized_embedding, top_k_postgres))
+    conn = None
+    postgres_results = []
+    try:
+        conn = PG_POOL.getconn()
+        cur = conn.cursor()
         
-    postgres_results = cur.fetchall()
-    cur.close()
-    conn.close()
-    
+        if keywords:
+            boost_conditions = " + ".join(["(CASE WHEN content ILIKE %s THEN 0.2 ELSE 0 END)" for _ in keywords])
+            search_query = f"""
+                SELECT source, title, content, 
+                       ((embedding <=> %s::vector) - ({boost_conditions})) as distance 
+                FROM rag.documents 
+                ORDER BY distance ASC 
+                LIMIT %s;
+            """
+            query_params = [optimized_embedding] + [f"%{k}%" for k in keywords] + [top_k_postgres]
+            cur.execute(search_query, query_params)
+        else:
+            search_query = "SELECT source, title, content, (embedding <=> %s::vector) as distance FROM rag.documents ORDER BY distance ASC LIMIT %s;"
+            cur.execute(search_query, (optimized_embedding, top_k_postgres))
+            
+        postgres_results = cur.fetchall()
+        cur.close()
+    except Exception as e:
+        print(f"❌ [ERREUR RAG] Erreur lors de la recherche vectorielle : {e}")
+    finally:
+        if conn:
+            PG_POOL.putconn(conn)
+        
     passages = [{"id": idx, "text": r[2], "meta": {"source": r[0], "title": r[1]}} for idx, r in enumerate(postgres_results)]
+    
+    if not passages:
+        return optimized_embedding, ""
+        
     reranked_results = RANKER.rerank(RerankRequest(query=query_text, passages=passages))
 
     if VERBOSE:
@@ -249,11 +301,9 @@ def load_system_prompt(prompt_filename, context_data):
 def ask_rag(question):
     global CURRENT_CONTEXT
     
-    # 1. Calcul de l'embedding pour le cache sémantique
     response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=question)
     raw_embedding = response['embedding']
 
-    # 2. VÉRIFICATION DU CACHE SÉMANTIQUE PERMANENT
     cached_hit = check_semantic_cache(raw_embedding, distance_threshold=0.12)
     if cached_hit:
         cache_id, cached_question, cached_response, distance = cached_hit
@@ -262,13 +312,11 @@ def ask_rag(question):
         save_message("assistant", cached_response)
         return cached_response + f"\n\n*(Généré depuis le Cache Permanent Postgres - [Cache ID: {cache_id}])*"
 
-    # 3. CACHE MISS : Recherche de contexte documentaire RAG
     if VERBOSE:
         print("🔄 [RAG] Analyse et recherche vectorielle lancées...")
     
     optimized_embed, CURRENT_CONTEXT = fetch_new_context(question, top_k_postgres=15, final_limit=3)
 
-    # 4. ENRICHISSEMENT VIA CATALOGUE SYSTÈME (Vérification anti-hallucination des tables)
     schema_enrichment = ""
     target_tables = ["pg_stat_replication", "pg_stat_activity", "pg_stat_progress_vacuum", "pg_stat_database"]
     for table in target_tables:
@@ -278,7 +326,6 @@ def ask_rag(question):
             schema_enrichment = get_table_schema(table)
             break
 
-    # Combinaison de la documentation HTML et de la vraie structure des tables
     extended_context = CURRENT_CONTEXT + "\n" + schema_enrichment
     prompt_system = load_system_prompt("prompt_rag", extended_context)
     
@@ -321,7 +368,6 @@ if __name__ == "__main__":
             if not ma_question: continue
             if ma_question.lower() in ['exit', 'quit', 'q']: break
             
-            # --- INTERCEPTEUR DE COMMANDES SYSTÈME ---
             if ma_question.startswith('/'):
                 parts = ma_question.split()
                 cmd = parts[0].lower()
@@ -367,3 +413,8 @@ if __name__ == "__main__":
             
         except KeyboardInterrupt: break
         except Exception as e: print(f"\n❌ Erreur : {e}\n")
+        
+    if PG_POOL:
+        if VERBOSE:
+            print("[SHUTDOWN] Fermeture du pool de connexions PostgreSQL...")
+        PG_POOL.closeall()
