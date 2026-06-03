@@ -1,0 +1,9 @@
+DB_NAME=rag_db
+DB_USER=rag
+DB_PASS=rag2026
+DB_HOST=localhost
+DB_PORT=5432
+
+EMBEDDING_MODEL=nomic-embed-text
+LLM_MODEL=qwen2.5:7b-instruct
+RERANK_MODEL=ms-marco-TinyBERT-L-2-v2
