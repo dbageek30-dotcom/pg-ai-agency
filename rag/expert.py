@@ -239,24 +239,24 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
         conn = PG_POOL.getconn()
         cur = conn.cursor()
         
-        # On sélectionne les EXACTES colonnes retournées par ta fonction SQL :
-        # id, title, heading, content, url, final_score
+        # On joint le résultat du hybrid_search avec la table documents pour récupérer 'source'
         search_query = """
-            SELECT url, title, content, final_score 
-            FROM rag.hybrid_search(%s, %s::vector, %s);
+            SELECT d.source, h.title, h.content, h.final_score 
+            FROM rag.hybrid_search(%s, %s::vector, %s) h
+            JOIN rag.documents d ON d.id = h.id;
         """
         cur.execute(search_query, (query_text, optimized_embedding, top_k_postgres))
             
         postgres_results = cur.fetchall()
         cur.close()
     except Exception as e:
-        print(f"❌ [ERREUR RAG] Erreur lors de la recherche hybride : {e}")
+        print(f"❌ [ERREUR RAG] Erreur lors de la recherche hybride avec jointure : {e}")
     finally:
         if conn:
             PG_POOL.putconn(conn)
         
-    # Mapping adapté : r[0] est maintenant 'url' (qui contient le nom du fichier ou le lien), r[1] est 'title', r[2] est 'content'
-    passages = [{"id": idx, "text": r[2], "meta": {"source": r[0] if r[0] else "unknown_source", "title": r[1]}} for idx, r in enumerate(postgres_results)]
+    # On remet r[0] sur la colonne source qui est désormais bien peuplée !
+    passages = [{"id": idx, "text": r[2], "meta": {"source": r[0] if r[0] else "unknown", "title": r[1]}} for idx, r in enumerate(postgres_results)]
     
     if not passages:
         return optimized_embedding, ""
@@ -265,7 +265,7 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
 
     if VERBOSE:
         print(f"\n📊 TABLEAU COMPARATIF CPU (HYBRID SEARCH & RERANK APPLIQUÉS) :")
-        print(f"{'FICHIER / URL':<35} | SCORE RERANK")
+        print(f"{'FICHIER HTML':<35} | SCORE RERANK")
         print("-" * 55)
     
     context_chunks = []

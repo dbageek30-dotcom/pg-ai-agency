@@ -1,0 +1,4 @@
+{
+  "secret_token": "123",
+  "db_dsn": "dbname=postgres user=pgagent password=pgagent host=localhost port=5432"
+}
