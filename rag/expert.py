@@ -221,7 +221,7 @@ def analyze_and_rewrite_query(user_question):
         return [], user_question
 
 # ---------------------------------------------------------------------------
-# PIPELINE RAG AVEC APPRENTISSAGE D'INTENTION
+# PIPELINE RAG AVEC APPRENTISSAGE D'INTENTION (HYBRID SEARCH REWRITE)
 # ---------------------------------------------------------------------------
 def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
     keywords, optimized_search = analyze_and_rewrite_query(query_text)
@@ -239,29 +239,23 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
         conn = PG_POOL.getconn()
         cur = conn.cursor()
         
-        if keywords:
-            boost_conditions = " + ".join(["(CASE WHEN content ILIKE %s THEN 0.2 ELSE 0 END)" for _ in keywords])
-            search_query = f"""
-                SELECT source, title, content, 
-                       ((embedding <=> %s::vector) - ({boost_conditions})) as distance 
-                FROM rag.documents 
-                ORDER BY distance ASC 
-                LIMIT %s;
-            """
-            query_params = [optimized_embedding] + [f"%{k}%" for k in keywords] + [top_k_postgres]
-            cur.execute(search_query, query_params)
-        else:
-            search_query = "SELECT source, title, content, (embedding <=> %s::vector) as distance FROM rag.documents ORDER BY distance ASC LIMIT %s;"
-            cur.execute(search_query, (optimized_embedding, top_k_postgres))
+        # Utilisation de la fonction stockée native PostgreSQL pour la recherche hybride RRF
+        # On extrait source, title, content, final_score
+        search_query = """
+            SELECT source, title, content, final_score 
+            FROM rag.hybrid_search(%s, %s::vector, %s);
+        """
+        cur.execute(search_query, (query_text, optimized_embedding, top_k_postgres))
             
         postgres_results = cur.fetchall()
         cur.close()
     except Exception as e:
-        print(f"❌ [ERREUR RAG] Erreur lors de la recherche vectorielle : {e}")
+        print(f"❌ [ERREUR RAG] Erreur lors de la recherche hybride : {e}")
     finally:
         if conn:
             PG_POOL.putconn(conn)
         
+    # Mapping propre des résultats pour FlashRank
     passages = [{"id": idx, "text": r[2], "meta": {"source": r[0], "title": r[1]}} for idx, r in enumerate(postgres_results)]
     
     if not passages:
@@ -270,7 +264,7 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
     reranked_results = RANKER.rerank(RerankRequest(query=query_text, passages=passages))
 
     if VERBOSE:
-        print(f"\n📊 TABLEAU COMPARATIF CPU (REWRITING APPLIQUÉ) :")
+        print(f"\n📊 TABLEAU COMPARATIF CPU (HYBRID SEARCH & RERANK APPLIQUÉS) :")
         print(f"{'FICHIER HTML':<35} | SCORE RERANK")
         print("-" * 55)
     
