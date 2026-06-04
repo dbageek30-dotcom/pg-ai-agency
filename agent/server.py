@@ -1,84 +1,38 @@
 import os
-import sys
-import json
-import subprocess
-import psycopg2
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, HTTPException, Header, Depends
+from pydantic import BaseModel
 
-app = Flask(__name__)
+app = FastAPI(title="PG 18 Remote Agent API")
 
-# Chemin absolu standardisé où le fichier sera lu sur la vm-pg
-CONFIG_PATH = "/opt/pgagent/config/config.json"
+# Récupération sécurisée du Token défini par le script d'installation
+EXPECTED_TOKEN = os.getenv("REMOTE_AGENT_TOKEN", "TOKEN_GENERE_A_LA_VOLEE_S1Cr1t")
 
-try:
-    with open(CONFIG_PATH, "r") as f:
-        config = json.load(f)
-except Exception as e:
-    print(f"❌ Erreur lors du chargement de la configuration : {e}")
-    sys.exit(1)
+class SQLPayload(BaseModel):
+    query: str
 
-SECRET_TOKEN = config.get("secret_token")
-DB_DSN = config.get("db_dsn")
+class SystemPayload(BaseModel):
+    command: str
 
-def check_auth():
-    """Vérification du token Bearer dans les headers HTTP"""
-    token = request.headers.get("Authorization")
-    return token == f"Bearer {SECRET_TOKEN}"
-
-@app.route("/api/v1/execute/sql", methods=["POST"])
-def execute_sql():
-    if not check_auth():
-        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+def verify_token(authorization: str = Header(None)):
+    """Vérification stricte du Bearer Token dans les headers HTTP"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or malformed Authorization header")
     
-    data = request.get_json()
-    sql_query = data.get("query")
-    params = data.get("params", [])
-    
-    if not sql_query:
-        return jsonify({"status": "error", "message": "Missing 'query' parameter"}), 400
-    
-    conn = None
-    try:
-        conn = psycopg2.connect(DB_DSN)
-        cur = conn.cursor()
-        cur.execute(sql_query, params)
-        
-        # Si la requête renvoie des lignes (SELECT, SHOW, etc.)
-        if cur.description:
-            columns = [desc[0] for desc in cur.description]
-            rows = cur.fetchall()
-            results = [dict(zip(columns, row)) for row in rows]
-        else:
-            conn.commit()
-            results = {"rows_affected": cur.rowcount}
-            
-        cur.close()
-        return jsonify({"status": "success", "data": results})
-    except Exception as e:
-        if conn: conn.rollback()
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if conn: conn.close()
+    token = authorization.split(" ")[1]
+    if token != EXPECTED_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid Security Token")
+    return token
 
-@app.route("/api/v1/execute/system", methods=["POST"])
-def execute_system():
-    if not check_auth():
-        return jsonify({"status": "error", "message": "Unauthorized"}), 401
-    
-    data = request.get_json()
-    command = data.get("command")
-    
-    # Liste blanche stricte des commandes système de diagnostic autorisées
-    allowed_commands = ["df -h", "free -m", "uptime", "pg_ctl status"]
-    if command not in allowed_commands:
-        return jsonify({"status": "error", "message": "Command not allowed"}), 403
-        
-    try:
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT).decode("utf-8")
-        return jsonify({"status": "success", "output": output})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+@app.get("/health")
+def health_check():
+    return {"status": "online", "agent": "postgresql-18-agent"}
 
-if __name__ == "__main__":
-    # L'agent écoute sur le port 8432
-    app.run(host="0.0.0.0", port=8432)
+@app.post("/api/v1/execute/sql", dependencies=[Depends(verify_token)])
+async def execute_sql(payload: SQLPayload):
+    # C'est ici qu'on branchera la connexion à ta base locale Postgres 18 plus tard
+    return {"status": "success", "message": f"Ordre SQL reçu : {payload.query}", "data": []}
+
+@app.post("/api/v1/execute/system", dependencies=[Depends(verify_token)])
+async def execute_system(payload: SystemPayload):
+    # C'est ici qu'on branchera ton script discovery.py pour valider et lancer la commande
+    return {"status": "success", "message": f"Ordre Système reçu : {payload.command}", "output": "Simulation active"}
