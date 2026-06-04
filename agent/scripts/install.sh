@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================
-#      PostgreSQL AI Agent - Installateur Officiel v1.8.0
+#      PostgreSQL AI Agent - Installateur Officiel v1.8.1
 #      Focus: Intelligent Auto-Discovery & Sudoers Security
 #      Target: FastAPI + Uvicorn Implementation
 # ==============================================================
@@ -19,10 +19,11 @@ while getopts "vV" opt; do
 done
 [ "$DEBUG" -eq 1 ] && set -x
 
-# --- Couleurs & Logging ---
+# --- Couleurs & Configuration Chemins ---
 BLUE="\e[34m" ; GREEN="\e[32m" ; YELLOW="\e[33m" ; RED="\e[31m" ; RESET="\e[0m"
 LOG_DIR="/opt/pgagent/logs" ; LOG_FILE="$LOG_DIR/install.log"
 
+# Fonction de log (utilisable uniquement après la création du dossier de log)
 log() { echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')]${RESET} $*" | tee -a "$LOG_FILE"; }
 
 # --- Check Root ---
@@ -33,16 +34,19 @@ if [ -d "/opt/pgagent" ]; then
     echo -e "${YELLOW}⚠️ Installation existante détectée dans /opt/pgagent.${RESET}"
     read -p "Voulez-vous écraser l'installation ? (o/N) : " CONFIRM
     if [[ "$CONFIRM" =~ ^[oO]$ ]]; then
-        log "🧹 Nettoyage de l'ancienne installation..."
+        echo "🧹 Nettoyage de l'ancienne installation..."
         systemctl stop pgagent 2>/dev/null || true
         rm -rf /opt/pgagent
     else
-        log "Arrêt de l'installation."
+        echo "Arrêt de l'installation."
         exit 0
     fi
 fi
 
+# Initialisation sécurisée du dossier de logs APRÈS le nettoyage
 mkdir -p "$LOG_DIR" && touch "$LOG_FILE"
+
+log "🚀 Début de la configuration et de l'installation de l'Agent..."
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 AGENT_SRC_DIR="$(dirname "$SCRIPT_DIR")"
 
@@ -94,7 +98,7 @@ PG_PROCESS_DATA_DIR="${PG_PROCESS_DATA_DIR%/}"
 
 if [ -n "$PG_PROCESS_DATA_DIR" ]; then
     log "🐘 Cluster actif identifié dans : $PG_PROCESS_DATA_DIR"
-    # Filtrage du find pour cibler la bonne instance active
+    # Filtrage précis via ta méthode croisée
     PG_CONF_FILE=$(find / -type f -name "postgresql.conf" 2>/dev/null | grep "$PG_PROCESS_DATA_DIR" | head -n 1 || echo "")
     PG_HBA_FILE=$(find / -type f -name "pg_hba.conf" 2>/dev/null | grep "$PG_PROCESS_DATA_DIR" | head -n 1 || echo "")
 else
@@ -121,7 +125,7 @@ PRIV_LEVEL=${PRIV_LEVEL:-1}
 
 read -s -p "Définissez le mot de passe PostgreSQL pour le rôle 'pgagent' : " AGENT_DB_PASSWORD ; echo ""
 
-# Injection du rôle PostgreSQL en passant par l'utilisateur système local postgres
+# Injection du rôle PostgreSQL
 sudo -u postgres psql -c "DO \$\$ 
 BEGIN 
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'pgagent') THEN 
@@ -144,7 +148,7 @@ case $PRIV_LEVEL in
 esac
 sudo -u postgres psql -c "GRANT pg_signal_backend TO pgagent;" >>"$LOG_FILE" 2>&1
 
-# Création du fichier d'authentification natif pour l'agent
+# Configuration du fichier .pgpass natif pour l'authentification transparente des outils systèmes
 echo "localhost:*:*:pgagent:${AGENT_DB_PASSWORD}" > /opt/pgagent/.pgpass
 chmod 600 /opt/pgagent/.pgpass
 chown pgagent:pgagent /opt/pgagent/.pgpass
@@ -168,12 +172,11 @@ chmod 600 /opt/pgagent/config/.env
 # --- [6/7] Configuration Sudoers & Permissions Fichiers ---
 log "🔐 [6/7] Sécurisation et écriture des règles Sudoers..."
 
-# Initialisation de la whitelist par défaut si absente
 if [ ! -f /opt/pgagent/bin/security/allowed_tools.json ]; then
     echo '{"allowed_commands": ["df -h", "free -m", "uptime", "pg_ctl status"]}' > /opt/pgagent/bin/security/allowed_tools.json
 fi
 
-# Application de la règle Sudoers chirurgicale basée sur les chemins découverts
+# Application de la règle Sudoers chirurgicale basée sur les cibles trouvées par ton cross-check
 cat <<EOF > /etc/sudoers.d/pgagent
 # Droits restreints pour l'agent : modification des deux fichiers cibles et rechargement
 pgagent ALL=(ALL) NOPASSWD: /usr/bin/tee -a $PG_CONF_FILE
@@ -182,7 +185,7 @@ pgagent ALL=(postgres) NOPASSWD: /usr/bin/pg_ctl reload
 EOF
 chmod 440 /etc/sudoers.d/pgagent
 
-# Verrouillage du code source appartenant à root (Anti-tampering)
+# Verrouillage anti-tampering (le code appartient à root, pgagent l'exécute sans pouvoir le modifier)
 chown -R root:root /opt/pgagent/bin
 chown -R pgagent:pgagent /opt/pgagent/logs /opt/pgagent/config
 chmod 755 /opt/pgagent
@@ -224,7 +227,7 @@ if command -v ufw >/dev/null; then
 fi
 
 log "=========================================================================="
-log "${GREEN}✔ Installation v1.8.0 Réussie !${RESET}"
+log "${GREEN}✔ Installation v1.8.1 Réussie !${RESET}"
 log "  -> Fichiers PG sécurisés détectés et configurés dans Sudoers."
 log "  -> Statut de l'agent :  systemctl status pgagent"
 log "=========================================================================="
