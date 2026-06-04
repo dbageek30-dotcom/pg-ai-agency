@@ -26,7 +26,7 @@ LLM_MODEL = os.getenv("LLM_MODEL", "qwen2.5:7b-instruct")
 RERANK_MODEL = os.getenv("RERANK_MODEL", "ms-marco-TinyBERT-L-2-v2")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SQLITE_DB_PATH = os.path.join(BASE_DIR, "rag", "rag_history.db")
+SQLITE_DB_PATH = os.path.join(BASE_DIR, "agency", "rag_history.db")
 
 VERBOSE = False
 CURRENT_CONTEXT = ""
@@ -288,7 +288,7 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
     return optimized_embedding, "\n\n--- EXTRAIT DE DOCUMENTATION ---\n\n".join(context_chunks)
 
 def load_system_prompt(prompt_filename, context_data):
-    prompt_path = os.path.join(BASE_DIR, "rag", prompt_filename)
+    prompt_path = os.path.join(BASE_DIR, "agency", prompt_filename)
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read().format(context=context_data)
 
@@ -311,16 +311,25 @@ def ask_rag(question):
     
     optimized_embed, CURRENT_CONTEXT = fetch_new_context(question, top_k_postgres=15, final_limit=3)
 
+    # ---------------------------------------------------------------------------
+    # ENRICHISSEMENT DYNAMIQUE DU CATALOGUE (SANS TABLEAU EN DUR)
+    # ---------------------------------------------------------------------------
     schema_enrichment = ""
-    target_tables = ["pg_stat_replication", "pg_stat_activity", "pg_stat_progress_vacuum", "pg_stat_database"]
-    for table in target_tables:
-        if table in question.lower():
-            if VERBOSE:
-                print(f"🔍 [CATALOG] Détection de '{table}'. Lecture de la structure réelle...")
-            schema_enrichment = get_table_schema(table)
-            break
+    # On boucle sur les mots-clés extraits par le Query Rewriter (analyze_and_rewrite_query)
+    # que l'on récupère indirectement ou en adaptant fetch_new_context.
+    # Pour faire simple et local à ask_rag, on extrait les mots-clés du texte :
+    import re
+    detected_system_objects = re.findall(r'\bpg_[a-z0-9_]+\b', question.lower())
+
+    for table in detected_system_objects:
+        if VERBOSE:
+            print(f"🔍 [CATALOG] Détection de '{table}'. Lecture de la structure réelle...")
+        schema_info = get_table_schema(table)
+        if schema_info:
+            schema_enrichment += schema_info + "\n"
 
     extended_context = CURRENT_CONTEXT + "\n" + schema_enrichment
+
     prompt_system = load_system_prompt("prompt_rag", extended_context)
     
     save_message("user", question)
