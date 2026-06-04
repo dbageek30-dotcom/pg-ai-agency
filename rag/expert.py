@@ -239,10 +239,10 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
         conn = PG_POOL.getconn()
         cur = conn.cursor()
         
-        # Utilisation de la fonction stockée native PostgreSQL pour la recherche hybride RRF
-        # On extrait source, title, content, final_score
+        # On sélectionne les EXACTES colonnes retournées par ta fonction SQL :
+        # id, title, heading, content, url, final_score
         search_query = """
-            SELECT source, title, content, final_score 
+            SELECT url, title, content, final_score 
             FROM rag.hybrid_search(%s, %s::vector, %s);
         """
         cur.execute(search_query, (query_text, optimized_embedding, top_k_postgres))
@@ -255,8 +255,8 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
         if conn:
             PG_POOL.putconn(conn)
         
-    # Mapping propre des résultats pour FlashRank
-    passages = [{"id": idx, "text": r[2], "meta": {"source": r[0], "title": r[1]}} for idx, r in enumerate(postgres_results)]
+    # Mapping adapté : r[0] est maintenant 'url' (qui contient le nom du fichier ou le lien), r[1] est 'title', r[2] est 'content'
+    passages = [{"id": idx, "text": r[2], "meta": {"source": r[0] if r[0] else "unknown_source", "title": r[1]}} for idx, r in enumerate(postgres_results)]
     
     if not passages:
         return optimized_embedding, ""
@@ -265,7 +265,7 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
 
     if VERBOSE:
         print(f"\n📊 TABLEAU COMPARATIF CPU (HYBRID SEARCH & RERANK APPLIQUÉS) :")
-        print(f"{'FICHIER HTML':<35} | SCORE RERANK")
+        print(f"{'FICHIER / URL':<35} | SCORE RERANK")
         print("-" * 55)
     
     context_chunks = []
