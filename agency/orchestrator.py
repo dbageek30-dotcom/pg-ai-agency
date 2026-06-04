@@ -1,4 +1,5 @@
 import os
+import readline
 import sys
 import json
 import argparse
@@ -17,6 +18,7 @@ REMOTE_AGENT_URL = os.getenv("REMOTE_AGENT_URL", "http://localhost:8432")
 REMOTE_AGENT_TOKEN = os.getenv("REMOTE_AGENT_TOKEN", "TOKEN_GENERE_A_LA_VOLEE_S1Cr1t")
 
 VERBOSE = False
+readline.parse_and_bind("tab: complete")
 
 def call_pgagent(endpoint: str, payload: dict) -> dict:
     """Envoie l'ordre HTTP au service pgagent distant"""
