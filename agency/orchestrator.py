@@ -37,40 +37,53 @@ def call_pgagent(endpoint: str, payload: dict) -> dict:
 
 def parse_action_with_llm(rag_output: str) -> dict:
     """Le LLM 14B extrait le code SQL ou la commande Bash de la réponse du RAG"""
-    prompt = f"""You are an infrastructure automation compiler. Analyze this technical expert recommendation:
+    prompt = f"""You are a strict API translation layer. Your ONLY job is to convert a technical recommendation into a raw JSON object.
+
+Technical Recommendation to parse:
 \"\"\"
 {rag_output}
 \"\"\"
 
-Extract the exact command or query to execute.
-Return a strict JSON object. Do NOT include markdown blocks like ```json.
-
-Allowed system commands: ["df -h", "free -m", "uptime", "pg_ctl status"]
-
-JSON Format expected:
+Expected JSON schema:
 {{
-    "type": "sql" | "system",
-    "payload": "the exact raw query or allowed system command"
+    "type": "sql",
+    "payload": "the raw SQL query string"
+}}
+OR
+{{
+    "type": "system",
+    "payload": "the allowed system command"
 }}"""
 
+    # Récupération propre de l'hôte distant depuis l'environnement ou repli sur ta VM LLM
+    ollama_host = os.getenv("OLLAMA_HOST", "http://10.198.0.4:11434")
+
     if VERBOSE:
-        print(f"   ⚙️ [DEBUG LLM] Envoi du prompt d'extraction d'action à {ORCHESTRATOR_MODEL}...")
+        print(f"   ⚙️ [DEBUG LLM] Connexion ciblée vers Ollama : {ollama_host}")
+        print(f"   ⚙️ [DEBUG LLM] Modèle demandé : {ORCHESTRATOR_MODEL}")
 
     try:
-        response = ollama.chat(
+        # Initialisation explicite du client distant
+        client = ollama.Client(host=ollama_host)
+        
+        response = client.chat(
             model=ORCHESTRATOR_MODEL,
             messages=[{"role": "user", "content": prompt}],
             options={"temperature": 0.0},
             format="json"
         )
+        
         raw_output = response['message']['content'].strip()
         
         if VERBOSE:
-            print(f"   ⚙️ [DEBUG LLM] Réponse brute du compilateur : {raw_output}")
+            print(f"   ⚙️ [DEBUG LLM] Réponse brute reçue : {raw_output}")
             
         return json.loads(raw_output)
     except Exception as e:
+        if VERBOSE:
+            print(f"   ❌ [DEBUG LLM ERROR] L'appel Ollama (extraction) a échoué : {e}")
         return {"type": "none", "payload": f"Erreur d'extraction : {e}"}
+
 
 def execute_action_pipeline(user_question: str):
     """MODE AGENT ACTIF : RAG -> Extraction de commande -> Exécution sur VM-PG -> Synthèse"""
@@ -94,7 +107,7 @@ def execute_action_pipeline(user_question: str):
     if VERBOSE:
         print(f"   ⚙️ [DEBUG NETWORK] Retour brut reçu du serveur : {json.dumps(execution_result, indent=2)}")
 
-    # Restitution finale
+    # Restitution finale (Utilise aussi le 14B distant pour rédiger le rapport)
     print("\n✍️ Syntèse du rapport d'exécution...")
     final_prompt = f"""You are an expert DBA. You executed an automated action on the remote server.
 Action Sent: {action['payload']}
@@ -103,7 +116,10 @@ Server Result: {json.dumps(execution_result)}
 Provide a concise, professional summary of the results returned by the server to the user. State clearly if the execution was a success or failure."""
 
     try:
-        response = ollama.chat(model=ORCHESTRATOR_MODEL, messages=[{"role": "user", "content": final_prompt}])
+        ollama_host = os.getenv("OLLAMA_HOST", "http://10.198.0.4:11434")
+        client = ollama.Client(host=ollama_host)
+        
+        response = client.chat(model=ORCHESTRATOR_MODEL, messages=[{"role": "user", "content": final_prompt}])
         print(f"\n🎯 [RAPPORT ACTION] :\n{response['message']['content'].strip()}\n")
     except Exception as e:
         print(f"❌ Erreur lors de la génération du rapport final : {e}")
