@@ -118,10 +118,10 @@ if __name__ == "__main__":
 
     print("\n" + "="*75)
     print("🗼 POSTGRESQL 18 AGENCY - CENTRAL ORCHESTRATOR")
-    print(f"   Mode verbeux initial : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}")
-    print("   -> Posez une question directement pour le mode INFORMATION 📖")
-    print("   -> Préfixez par /a ou /action pour déclencher une ACTION RÉELLE ⚡")
-    print("   -> Commandes :  /c (clear)  |  /h (history)  |  /d [id] (delete cache)  |  /v (verbose)")
+    print(f"    Mode verbeux initial : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}")
+    print("    -> Posez une question directement pour le mode INFORMATION 📖")
+    print("    -> Préfixez par /a ou /action pour déclencher une ACTION RÉELLE ⚡")
+    print("    -> Commandes :  /c (clear)  |  /h (history)  |  /d [id] (delete cache)  |  /v (verbose)")
     print("="*75 + "\n")
     
     while True:
@@ -132,9 +132,17 @@ if __name__ == "__main__":
             if user_input.lower() in ['q', 'quit', 'exit']: break
             
             # ------------------------------------------------------------------
-            # INTERCEPTION DES COMMANDES SYSTEME ET DU CACHE
+            # 1. ROUTAGE DES INTENTIONS D'ACTION (PRIORITÉ MAX)
             # ------------------------------------------------------------------
-            if user_input.startswith('/'):
+            if user_input.startswith(('/a ', '/action ')):
+                clean_question = user_input.split(maxsplit=1)[1]
+                execute_action_pipeline(clean_question)
+                continue
+            
+            # ------------------------------------------------------------------
+            # 2. INTERCEPTION DES COMMANDES INTERFACE ET DU CACHE
+            # ------------------------------------------------------------------
+            elif user_input.startswith('/'):
                 parts = user_input.split()
                 cmd = parts[0].lower()
                 
@@ -169,15 +177,12 @@ if __name__ == "__main__":
                     print(f"🔬 [SYSTEM] Mode verbeux global basculé : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}\n")
                 
                 else:
-                    print(f"❌ [ERREUR] Commande '{cmd}' inconnue. (/c, /h, /d, /v)\n")
+                    print(f"❌ [ERREUR] Commande '{cmd}' inconnue. (/c, /h, /d, /v, ou /a pour exécuter)\n")
                 continue
             
             # ------------------------------------------------------------------
-            # ROUTAGE DES INTENTIONS CLASSIQUES (ACTION / RECHERCHE)
+            # 3. MODE INFORMATION PAR DÉFAUT (SIMPLE RECHERCHE)
             # ------------------------------------------------------------------
-            if user_input.startswith(('/a ', '/action ')):
-                clean_question = user_input.split(maxsplit=1)[1]
-                execute_action_pipeline(clean_question)
             else:
                 print("\n📖 [MODE INFORMATION] Consultation de la base de connaissances...")
                 reponse = expert.ask_rag(user_input)
