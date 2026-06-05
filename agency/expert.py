@@ -5,6 +5,7 @@ from psycopg2 import pool
 import argparse
 import sqlite3
 import json
+import re
 from datetime import datetime
 from dotenv import load_dotenv
 import ollama
@@ -56,15 +57,23 @@ except Exception as e:
 # STRUCTURES DE SESSIONS ET CACHE
 # ---------------------------------------------------------------------------
 def init_sqlite_db():
+    """Initialise la table SQLite pour l'historique de session"""
+    os.makedirs(os.path.dirname(SQLITE_DB_PATH), exist_ok=True)
     conn = sqlite3.connect(SQLITE_DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT, role TEXT, content TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            timestamp TEXT, 
+            role TEXT, 
+            content TEXT
         )
     """)
     conn.commit()
     conn.close()
+
+# INITIALISATION IMMÉDIATE : Permet à l'orchestrateur d'importer le module sans crash
+init_sqlite_db()
 
 def save_message(role, content):
     conn = sqlite3.connect(SQLITE_DB_PATH)
@@ -208,12 +217,16 @@ def analyze_and_rewrite_query(user_question):
         )
         raw_content = response['message']['content'].strip()
         
+        # Nettoyage rigoureux des backticks Markdown au cas où le LLM forcerait le formatage
         if raw_content.startswith("```"):
-            raw_content = raw_content.split("```")[1]
-            if raw_content.startswith("json"):
-                raw_content = raw_content[4:]
-        
-        analysis = json.loads(raw_content.strip())
+            lines = raw_content.splitlines()
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines[-1].startswith("```"):
+                lines = lines[:-1]
+            raw_content = "\n".join(lines).strip()
+            
+        analysis = json.loads(raw_content)
         return analysis.get("keywords", []), analysis.get("search_query", user_question)
     except Exception as e:
         if VERBOSE:
@@ -239,7 +252,6 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
         conn = PG_POOL.getconn()
         cur = conn.cursor()
         
-        # On joint le résultat du hybrid_search avec la table documents pour récupérer 'source'
         search_query = """
             SELECT d.source, h.title, h.content, h.final_score 
             FROM rag.hybrid_search(%s, %s::vector, %s) h
@@ -255,7 +267,6 @@ def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
         if conn:
             PG_POOL.putconn(conn)
         
-    # On remet r[0] sur la colonne source qui est désormais bien peuplée !
     passages = [{"id": idx, "text": r[2], "meta": {"source": r[0] if r[0] else "unknown", "title": r[1]}} for idx, r in enumerate(postgres_results)]
     
     if not passages:
@@ -312,13 +323,9 @@ def ask_rag(question):
     optimized_embed, CURRENT_CONTEXT = fetch_new_context(question, top_k_postgres=15, final_limit=3)
 
     # ---------------------------------------------------------------------------
-    # ENRICHISSEMENT DYNAMIQUE DU CATALOGUE (SANS TABLEAU EN DUR)
+    # ENRICHISSEMENT DYNAMIQUE DU CATALOGUE
     # ---------------------------------------------------------------------------
     schema_enrichment = ""
-    # On boucle sur les mots-clés extraits par le Query Rewriter (analyze_and_rewrite_query)
-    # que l'on récupère indirectement ou en adaptant fetch_new_context.
-    # Pour faire simple et local à ask_rag, on extrait les mots-clés du texte :
-    import re
     detected_system_objects = re.findall(r'\bpg_[a-z0-9_]+\b', question.lower())
 
     for table in detected_system_objects:
@@ -349,13 +356,15 @@ def ask_rag(question):
     
     return reply
 
+# ---------------------------------------------------------------------------
+# SCRIPT ENTRYPOINT (CONSOLE DIRECTE)
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Expert PostgreSQL 18 - Console DBA avec Cache Sémantique")
     parser.add_argument("-v", "--verbose", action="store_true", help="Active les logs de debug")
     args = parser.parse_args()
 
     VERBOSE = args.verbose
-    init_sqlite_db()
     clear_history()
 
     print("\n" + "="*75)
@@ -377,7 +386,7 @@ if __name__ == "__main__":
                 
                 if cmd in ['/clear', '/c']:
                     clear_history()
-                    print("🧠 [SYSTEM] Session réinitialisée. (Note : Le cache permanent Postgres reste actif !)\n")
+                    print("🧠 [SYSTEM] Session réinitialisée. (Le cache permanent Postgres reste actif !)\n")
                 elif cmd in ['/history', '/h']:
                     history = get_recent_history(limit=10)
                     if not history:
