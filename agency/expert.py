@@ -2,8 +2,8 @@ import os
 import logging
 import psycopg2
 from psycopg2 import pool
+from psycopg2.extras import RealDictCursor
 import argparse
-import sqlite3
 import json
 import re
 from datetime import datetime
@@ -11,9 +11,11 @@ from dotenv import load_dotenv
 import ollama
 from flashrank import Ranker, RerankRequest
 
+# Désactivation des logs verbeux des librairies tierces
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("flashrank").setLevel(logging.WARNING)
 
+# Chargement des variables d'environnement
 load_dotenv()
 
 DB_NAME = os.getenv("DB_NAME", "rag_db")
@@ -27,7 +29,6 @@ LLM_MODEL = os.getenv("LLM_MODEL", "qwen2.5:7b-instruct")
 RERANK_MODEL = os.getenv("RERANK_MODEL", "ms-marco-TinyBERT-L-2-v2")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SQLITE_DB_PATH = os.path.join(BASE_DIR, "agency", "rag_history.db")
 
 VERBOSE = False
 CURRENT_CONTEXT = ""
@@ -54,51 +55,105 @@ except Exception as e:
     exit(1)
 
 # ---------------------------------------------------------------------------
-# STRUCTURES DE SESSIONS ET CACHE
+# INITIALISATION DES TABLES POSTGRESQL (MIGRATION DE SQLITE COMPLÈTE)
 # ---------------------------------------------------------------------------
-def init_sqlite_db():
-    """Initialise la table SQLite pour l'historique de session"""
-    os.makedirs(os.path.dirname(SQLITE_DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(SQLITE_DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chat_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            timestamp TEXT, 
-            role TEXT, 
-            content TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
+def init_postgres_tables():
+    """Initialise le schéma et les tables d'historique au sein de PostgreSQL"""
+    conn = None
+    try:
+        conn = PG_POOL.getconn()
+        cur = conn.cursor()
+        
+        # 1. Table d'historique de session éphémère (Remplace SQLite)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS rag.chat_history (
+                id SERIAL PRIMARY KEY,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                role VARCHAR(20) NOT NULL,
+                content TEXT NOT NULL
+            );
+        """)
+        
+        # 2. Table de cache sémantique
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS rag.semantic_cache (
+                id SERIAL PRIMARY KEY,
+                question TEXT NOT NULL,
+                response TEXT NOT NULL,
+                embedding vector(768),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print(f"❌ [ERREUR INITIALISATION TABLES] : {e}")
+    finally:
+        if conn:
+            PG_POOL.putconn(conn)
 
-# INITIALISATION IMMÉDIATE : Permet à l'orchestrateur d'importer le module sans crash
-init_sqlite_db()
+# Initialisation automatique au chargement de l'expert
+init_postgres_tables()
 
+# ---------------------------------------------------------------------------
+# HISTORIQUE CONVERSATIONNEL DE SESSION
+# ---------------------------------------------------------------------------
 def save_message(role, content):
-    conn = sqlite3.connect(SQLITE_DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO chat_history (timestamp, role, content) VALUES (?, ?, ?)", (datetime.now().isoformat(), role, content))
-    conn.commit()
-    conn.close()
+    """Sauvegarde un message de discussion (user/assistant) dans PostgreSQL"""
+    conn = None
+    try:
+        conn = PG_POOL.getconn()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO rag.chat_history (role, content) VALUES (%s, %s);", (role, content))
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        if VERBOSE: 
+            print(f"⚠️ Erreur lors de la sauvegarde du message : {e}")
+    finally:
+        if conn: 
+            PG_POOL.putconn(conn)
 
 def get_recent_history(limit=4):
-    conn = sqlite3.connect(SQLITE_DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT role, content FROM chat_history ORDER BY id DESC LIMIT ?", (limit,))
-    rows = cursor.fetchall()
-    conn.close()
+    """Extrait les derniers messages de la session active pour maintenir le contexte"""
+    conn = None
+    rows = []
+    try:
+        conn = PG_POOL.getconn()
+        cur = conn.cursor()
+        cur.execute("SELECT role, content FROM rag.chat_history ORDER BY id DESC LIMIT %s;", (limit,))
+        rows = cur.fetchall()
+        cur.close()
+    except Exception as e:
+        if VERBOSE: 
+            print(f"⚠️ Erreur lors de la récupération de l'historique : {e}")
+    finally:
+        if conn: 
+            PG_POOL.putconn(conn)
     return [{"role": r[0], "content": r[1]} for r in reversed(rows)]
 
 def clear_history():
+    """Efface l'historique de la session conversationnelle en cours"""
     global CURRENT_CONTEXT
-    conn = sqlite3.connect(SQLITE_DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM chat_history")
-    conn.commit()
-    conn.close()
-    CURRENT_CONTEXT = ""
+    conn = None
+    try:
+        conn = PG_POOL.getconn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM rag.chat_history;")
+        conn.commit()
+        cur.close()
+        CURRENT_CONTEXT = ""
+    except Exception as e:
+        if VERBOSE: 
+            print(f"⚠️ Erreur lors de la réinitialisation de l'historique : {e}")
+    finally:
+        if conn: 
+            PG_POOL.putconn(conn)
 
+# ---------------------------------------------------------------------------
+# GESTION DU CACHE SÉMANTIQUES POSTGRESQL
+# ---------------------------------------------------------------------------
 def check_semantic_cache(query_embedding, distance_threshold=0.12):
     conn = None
     try:
@@ -140,7 +195,6 @@ def save_to_semantic_cache(question, response_text, query_embedding):
             PG_POOL.putconn(conn)
 
 def delete_cache_entry(entry_id):
-    """Supprime une entrée spécifique du cache sémantique Postgres"""
     conn = None
     try:
         conn = PG_POOL.getconn()
@@ -163,12 +217,10 @@ def delete_cache_entry(entry_id):
 # INTERROGATION DU CATALOGUE SYSTEME (ANTI-HALLUCINATION)
 # ---------------------------------------------------------------------------
 def get_table_schema(table_name):
-    """Récupère la structure réelle de l'objet depuis le catalogue pour l'injecter au LLM"""
     conn = None
     try:
         conn = PG_POOL.getconn()
         cur = conn.cursor()
-        
         query = """
             SELECT column_name, data_type 
             FROM information_schema.columns 
@@ -178,7 +230,6 @@ def get_table_schema(table_name):
         cur.execute(query, (table_name,))
         rows = cur.fetchall()
         cur.close()
-        
         if rows:
             schema_str = f"\n📊 [REAL SCHEMA FROM CATALOG] Structure actuelle de la vue/table '{table_name}' dans PostgreSQL 18 :\n"
             for col, dtype in rows:
@@ -200,14 +251,10 @@ def get_table_schema(table_name):
 def analyze_and_rewrite_query(user_question):
     if VERBOSE:
         print("[INTENT] 🧠 Interprétation de la question par le LLM...")
-        
     prompt = f"""You are a DBA assistant. Analyze this question and extract technical keywords (like system views, function names, or parameters) and build an optimized vector search query.
     Return a JSON object with 'keywords' (list of strings) and 'search_query' (string).
-    
     CRITICAL RULE: Do NOT write SQL queries, SELECT commands, or code in the 'search_query' field. It must be a plain descriptive English search string.
-    
     Question: {user_question}"""
-    
     try:
         response = ollama.chat(
             model=LLM_MODEL, 
@@ -216,8 +263,6 @@ def analyze_and_rewrite_query(user_question):
             format="json" 
         )
         raw_content = response['message']['content'].strip()
-        
-        # Nettoyage rigoureux des backticks Markdown au cas où le LLM forcerait le formatage
         if raw_content.startswith("```"):
             lines = raw_content.splitlines()
             if lines[0].startswith("```"):
@@ -225,14 +270,12 @@ def analyze_and_rewrite_query(user_question):
             if lines[-1].startswith("```"):
                 lines = lines[:-1]
             raw_content = "\n".join(lines).strip()
-            
         analysis = json.loads(raw_content)
         return analysis.get("keywords", []), analysis.get("search_query", user_question)
     except Exception as e:
         if VERBOSE:
             print(f"[INTENT] ⚠️ Échec de l'analyse, repli sur la question brute: {e}")
         return [], user_question
-
 # ---------------------------------------------------------------------------
 # PIPELINE RAG AVEC APPRENTISSAGE D'INTENTION (HYBRID SEARCH REWRITE)
 # ---------------------------------------------------------------------------
