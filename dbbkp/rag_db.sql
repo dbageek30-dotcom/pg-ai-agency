@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict jB0cQv1ZAfnXcU7UW0fgFUfTrbxscLJPM66Ip8DFknHhXlB66imupXeay1JENh9
+\restrict FeauVefp5SMMBYEGgbQkeRMQttyUpvGRppeVDeyomjgNikRfJ3CINFqYRUPQTqr
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.4 (Debian 18.4-1.pgdg13+1)
@@ -94,6 +94,44 @@ COMMENT ON EXTENSION vector IS 'pgvector extension for embeddings and ANN search
 
 
 --
+-- Name: fn_auto_migrate_to_fiche(); Type: FUNCTION; Schema: rag; Owner: postgres
+--
+
+CREATE FUNCTION rag.fn_auto_migrate_to_fiche() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    INSERT INTO rag.deterministic_fiches (user_query, action_type, fiche_json)
+    VALUES (
+        lower(trim(NEW.user_query)),
+        NEW.action_type,
+        jsonb_build_object(
+            'meta', jsonb_build_object(
+                'origin_id', NEW.id,
+                'description', NEW.description,
+                'migrated_at', NOW()
+            ),
+            'payload', jsonb_build_object(
+                'type', NEW.action_type,
+                'command', trim(NEW.payload)
+            ),
+            'target_context', CASE 
+                WHEN NEW.action_type = 'config' THEN 'postgresql.conf'
+                ELSE 'psql_session'
+            END
+        )
+    )
+    ON CONFLICT (user_query) DO UPDATE 
+    SET fiche_json = EXCLUDED.fiche_json;
+    
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION rag.fn_auto_migrate_to_fiche() OWNER TO postgres;
+
+--
 -- Name: hybrid_search(text, public.vector, integer); Type: FUNCTION; Schema: rag; Owner: postgres
 --
 
@@ -180,6 +218,79 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: chat_history; Type: TABLE; Schema: rag; Owner: rag
+--
+
+CREATE TABLE rag.chat_history (
+    id integer NOT NULL,
+    "timestamp" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    role character varying(20) NOT NULL,
+    content text NOT NULL
+);
+
+
+ALTER TABLE rag.chat_history OWNER TO rag;
+
+--
+-- Name: chat_history_id_seq; Type: SEQUENCE; Schema: rag; Owner: rag
+--
+
+CREATE SEQUENCE rag.chat_history_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE rag.chat_history_id_seq OWNER TO rag;
+
+--
+-- Name: chat_history_id_seq; Type: SEQUENCE OWNED BY; Schema: rag; Owner: rag
+--
+
+ALTER SEQUENCE rag.chat_history_id_seq OWNED BY rag.chat_history.id;
+
+
+--
+-- Name: deterministic_fiches; Type: TABLE; Schema: rag; Owner: postgres
+--
+
+CREATE TABLE rag.deterministic_fiches (
+    id integer NOT NULL,
+    user_query text NOT NULL,
+    action_type character varying(50) NOT NULL,
+    fiche_json jsonb NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE rag.deterministic_fiches OWNER TO postgres;
+
+--
+-- Name: deterministic_fiches_id_seq; Type: SEQUENCE; Schema: rag; Owner: postgres
+--
+
+CREATE SEQUENCE rag.deterministic_fiches_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE rag.deterministic_fiches_id_seq OWNER TO postgres;
+
+--
+-- Name: deterministic_fiches_id_seq; Type: SEQUENCE OWNED BY; Schema: rag; Owner: postgres
+--
+
+ALTER SEQUENCE rag.deterministic_fiches_id_seq OWNED BY rag.deterministic_fiches.id;
+
+
+--
 -- Name: documents; Type: TABLE; Schema: rag; Owner: rag
 --
 
@@ -234,6 +345,45 @@ ALTER TABLE rag.documents ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );
+
+
+--
+-- Name: history_actions; Type: TABLE; Schema: rag; Owner: postgres
+--
+
+CREATE TABLE rag.history_actions (
+    id integer NOT NULL,
+    user_query text NOT NULL,
+    action_type character varying(20) NOT NULL,
+    payload text NOT NULL,
+    description text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE rag.history_actions OWNER TO postgres;
+
+--
+-- Name: history_actions_id_seq; Type: SEQUENCE; Schema: rag; Owner: postgres
+--
+
+CREATE SEQUENCE rag.history_actions_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE rag.history_actions_id_seq OWNER TO postgres;
+
+--
+-- Name: history_actions_id_seq; Type: SEQUENCE OWNED BY; Schema: rag; Owner: postgres
+--
+
+ALTER SEQUENCE rag.history_actions_id_seq OWNED BY rag.history_actions.id;
 
 
 --
@@ -337,10 +487,95 @@ ALTER TABLE tools.pg_tools ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 
 
 --
+-- Name: chat_history id; Type: DEFAULT; Schema: rag; Owner: rag
+--
+
+ALTER TABLE ONLY rag.chat_history ALTER COLUMN id SET DEFAULT nextval('rag.chat_history_id_seq'::regclass);
+
+
+--
+-- Name: deterministic_fiches id; Type: DEFAULT; Schema: rag; Owner: postgres
+--
+
+ALTER TABLE ONLY rag.deterministic_fiches ALTER COLUMN id SET DEFAULT nextval('rag.deterministic_fiches_id_seq'::regclass);
+
+
+--
+-- Name: history_actions id; Type: DEFAULT; Schema: rag; Owner: postgres
+--
+
+ALTER TABLE ONLY rag.history_actions ALTER COLUMN id SET DEFAULT nextval('rag.history_actions_id_seq'::regclass);
+
+
+--
 -- Name: semantic_cache id; Type: DEFAULT; Schema: rag; Owner: postgres
 --
 
 ALTER TABLE ONLY rag.semantic_cache ALTER COLUMN id SET DEFAULT nextval('rag.semantic_cache_id_seq'::regclass);
+
+
+--
+-- Data for Name: chat_history; Type: TABLE DATA; Schema: rag; Owner: rag
+--
+
+COPY rag.chat_history (id, "timestamp", role, content) FROM stdin;
+1	2026-06-06 14:57:07.021024	user	how to get data_directory path ?
+2	2026-06-06 14:57:07.0222	assistant	To get the path of the `data_directory`, you can use the following SQL query:\n\n```sql\nSHOW data_directory;\n```\n\nThis will return the current `data_directory` setting, which indicates where your PostgreSQL cluster's data files are stored.
+3	2026-06-06 15:11:12.224082	user	show me the data_directory path
+4	2026-06-06 15:11:12.225105	assistant	To show the `data_directory` path, you can use the following SQL command:\n\n```sql\nSHOW data_directory;\n```\n\nThis will return the current setting of the `data_directory` parameter, indicating where your PostgreSQL cluster stores its data.
+\.
+
+
+--
+-- Data for Name: deterministic_fiches; Type: TABLE DATA; Schema: rag; Owner: postgres
+--
+
+COPY rag.deterministic_fiches (id, user_query, action_type, fiche_json, created_at) FROM stdin;
+1	how to get data_directory path ?	sql	{"meta": {"origin_id": 1, "description": "Récupère le chemin absolu du répertoire data de PostgreSQL", "migrated_at": "2026-06-06T15:09:03.227731+00:00"}, "payload": {"type": "sql", "command": "SHOW data_directory;"}, "target_context": "psql_session"}	2026-06-06 15:06:15.779566
+3	give me the ways to get data_directory ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 17}, "payload": {"type": "sql", "command": "sql\\nSHOW data_directory;\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+4	what command to generae a sql dump file ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 21}, "payload": {"type": "sql", "command": "sql\\npg_dump dbname > dumpfile.sql\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+5	how to restore it?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 22}, "payload": {"type": "bash", "command": "bash\\npsql -U username -d dbname < dumpfile.sql\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+6	how can i dump using custom format ?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 23}, "payload": {"type": "bash", "command": "bash\\npg_dump -Fc dbname > filename.dump\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+7	how can i sets the maximum number of background processes that the cluster can support ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 24}, "payload": {"type": "sql", "command": "sql\\nALTER SYSTEM SET max_worker_processes TO 'new_value';\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+8	how to configure vaccum	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 25}, "payload": {"type": "sql", "command": "sql\\n-- Enable autovacuum (if not already enabled)\\nALTER SYSTEM SET autovacuum = on;\\n\\n-- Adjust autovacuum parameters\\nALTER SYSTEM SET autovacuum_naptime = 60; -- Time between autovacuum launcher checks\\nALTER SYSTEM SET vacuum_freeze_age = '900000000'; -- Freeze age in transactions\\n\\n-- Set track_counts to true for autovacuuming\\nALTER SYSTEM SET track_counts = on;\\n\\n-- Restart PostgreSQL to apply changes\\nSELECT pg_reload_conf();\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+9	how to vaccum a table ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 27}, "payload": {"type": "sql", "command": "sql\\nVACUUM [FULL] TABLE your_table_name;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+10	how to vacuum table	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 28}, "payload": {"type": "sql", "command": "sql\\nVACUUM your_table_name;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+11	what are the impacts for a vacuum full ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 29}, "payload": {"type": "sql", "command": "sql\\nVACUUM FULL your_table_name;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+12	how can i configure streaming replication without replication slots?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 30}, "payload": {"type": "sql", "command": "sql\\n-- On Primary Server\\nALTER SYSTEM SET max_wal_senders TO 3;\\nALTER SYSTEM SET wal_level TO replica;\\n\\n-- Optionally, on Standby Server (if using physical replication)\\nRESET max_replication_slots;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+13	how can i know the replication is active ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 31}, "payload": {"type": "sql", "command": "sql\\nSELECT * FROM pg_stat_replication;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+14	how to set hugepages	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 32}, "payload": {"type": "bash", "command": "bash\\n# Check required kernel settings\\ngrep -E 'CONFIG_HUGETLBFS=y|CONFIG_HUGETLB_PAGE=y' /boot/config-$(uname -r)\\n\\n# Query the number of huge pages needed\\npostgres -D $PGDATA -C shared_memory_size_in_huge_pages\\n\\n# Set the number of huge pages (e.g., 3170)\\nsysctl -w vm.nr_hugepages=3170\\n\\n# Persist settings across reboots by adding to /etc/sysctl.conf\\necho \\"vm.nr_hugepages = 3170\\" >> /etc/sysctl.conf\\n\\n# Optionally, set non-default huge page size (e.g., 2MB)\\necho 3170 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+15	how do i set shared_buffers ?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 33}, "payload": {"type": "bash", "command": "bash\\npostgres -c \\"shared_buffers=256MB\\" -D /path/to/data/directory\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+16	how to drop a database?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 34}, "payload": {"type": "sql", "command": "sql\\nDROP DATABASE name;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+17	how to create new database?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 35}, "payload": {"type": "sql", "command": "sql\\nCREATE DATABASE dbname;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+18	how can i know the number of active sessions ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 36}, "payload": {"type": "sql", "command": "sql\\nSELECT count(*) FROM pg_stat_activity WHERE state != 'idle';\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+19	how can i change the 'locale' when initializing database cluster ?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 37}, "payload": {"type": "bash", "command": "bash\\ninitdb --locale fr_FR.UTF-8\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+20	what are the principale locale providers ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 38}, "payload": {"type": "sql", "command": "sql\\n-- Example to initialize a database cluster using the ICU provider\\ninitdb --locale-provider=icu --icu-locale=en\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+21	how can i create a new collation	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 39}, "payload": {"type": "sql", "command": "sql\\nCREATE COLLATION my_custom_collation (provider = builtin, locale = 'en_US');\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+22	what is check_postgres ?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 40}, "payload": {"type": "bash", "command": "bash\\n# Example command to run check_postgres\\ncheck_postgres --verbose\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+23	how can i have the dead tuples number ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 41}, "payload": {"type": "sql", "command": "sql\\nSELECT dead_tuple_count \\nFROM pgstattuple('your_table_name');\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+24	what parameters to set for effective vacuum ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 42}, "payload": {"type": "sql", "command": "sql\\n# Set maintenance work memory higher if needed\\nmaintenance_work_mem = '256MB'\\n\\n# Adjust autovacuum work memory based on workload\\nautovacuum_work_mem = '64MB'  # or set it to -1 to use maintenance_work_mem\\n\\n# Enable cost-based vacuum delay for better concurrency\\nvacuum_cost_delay = '1ms'\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+25	how to get primmary_conninfo ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 43}, "payload": {"type": "sql", "command": "sql\\nSELECT * FROM pg_replication_slots WHERE slot_name = 'your_slot_name';\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+26	how to set primary_conninfo parameter ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 44}, "payload": {"type": "sql", "command": "ini\\n# In postgresql.conf\\nprimary_conninfo = 'host=192.168.1.50 port=5432 user=foo password=foopass options=\\"\\"'\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+27	what are the possible values for wal_level parameter ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 45}, "payload": {"type": "sql", "command": "markdown\\nreplica\\nminimal\\nlogical\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+28	how can i create replication slots ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 46}, "payload": {"type": "sql", "command": "sql\\nSELECT pg_create_physical_replication_slot('my_slot_name');\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+29	how to calculate database size in mo ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 50}, "payload": {"type": "sql", "command": "sql\\nSELECT pg_database_size('your_database_name') AS db_size_in_bytes,\\n       pg_database_size('your_database_name') / 1048576 AS db_size_in_mo;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+30	how to configure wal_level for logical replication ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 52}, "payload": {"type": "sql", "command": "sql\\n# In postgresql.conf\\nwal_level = 'logical'\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+31	how do i use archive_command ?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 47}, "payload": {"type": "bash", "command": "markdown\\narchive_mode = on\\narchive_command = 'cp %p /path/to/archive/%f'\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+32	and restore_command ?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 48}, "payload": {"type": "bash", "command": "markdown\\nrestore_command = 'cp /mnt/archives/%f %p'\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+33	how set up pitr ?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 49}, "payload": {"type": "bash", "command": "markdown\\narchive_mode = on\\narchive_command = 'cp %p /path/to/archive/%f'\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+34	how to configure wal_level for streaming replication ?	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 51}, "payload": {"type": "bash", "command": "bash\\n# Edit postgresql.conf on the primary server\\nsudo nano /var/lib/postgresql/18/main/postgresql.conf\\n\\nwal_level = 'replica'\\n\\n# Restart PostgreSQL service\\nsudo systemctl restart postgresql\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+35	how can i check if my logical replication slots are active and active_pid is populated?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 53}, "payload": {"type": "sql", "command": "sql\\nSELECT slot_name, active, active_pid \\nFROM pg_replication_slots;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+36	how to show data_directory path ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 54}, "payload": {"type": "sql", "command": "sql\\nSHOW data_directory;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+37	how to analyze a table ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 55}, "payload": {"type": "sql", "command": "sql\\nANALYZE your_table_name;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+38	analyze rag.documents table	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 56}, "payload": {"type": "sql", "command": "sql\\nANALYZE rag.documents;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+39	show me data_directory	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 57}, "payload": {"type": "sql", "command": "sql\\nSHOW data_directory;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+40	what is the value of shared_buffers parameter ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 58}, "payload": {"type": "sql", "command": "sql\\nSHOW shared_buffers;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+41	donne moi la valeur de buffers_alloc dans la vue 'pg_stat_bgwriter'	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 61}, "payload": {"type": "sql", "command": "sql\\nSELECT COUNT(*) AS buffers_alloc\\nFROM pg_buffercache;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+42	what are the values for the catalog view 'pg_stat_bgwriter' ?	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 62}, "payload": {"type": "sql", "command": "sql\\nSELECT \\n    buffers_clean, \\n    maxwritten_clean, \\n    stats_reset \\nFROM pg_stat_bgwriter;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+43	run new statistics on postgres database	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 63}, "payload": {"type": "sql", "command": "sql\\nANALYZE schema_name.table_name;\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+44	change shared_buffers value to 2gb	bash	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 64}, "payload": {"type": "bash", "command": "bash\\nsudo nano /etc/postgresql/18/main/postgresql.conf\\n"}, "target_context": "postgresql.conf"}	2026-06-06 15:09:42.379054
+45	get data_directory path	sql	{"meta": {"description": "Généré automatiquement depuis le cache sémantique", "migrated_at": "2026-06-06T15:09:42.379054+00:00", "origin_cache_id": 65}, "payload": {"type": "sql", "command": "sql\\nSHOW data_directory;\\n"}, "target_context": "psql_session"}	2026-06-06 15:09:42.379054
+\.
 
 
 --
@@ -1393,6 +1628,15 @@ COPY rag.documents (id, document_uid, parent_document_id, prev_document_id, next
 
 
 --
+-- Data for Name: history_actions; Type: TABLE DATA; Schema: rag; Owner: postgres
+--
+
+COPY rag.history_actions (id, user_query, action_type, payload, description, created_at, updated_at) FROM stdin;
+1	how to get data_directory path ?	sql	SHOW data_directory;	Récupère le chemin absolu du répertoire data de PostgreSQL	2026-06-06 15:06:06.58736	2026-06-06 15:06:06.58736
+\.
+
+
+--
 -- Data for Name: semantic_cache; Type: TABLE DATA; Schema: rag; Owner: postgres
 --
 
@@ -1439,6 +1683,7 @@ COPY rag.semantic_cache (id, question, response, embedding, created_at) FROM std
 62	what are the values for the catalog view 'pg_stat_bgwriter' ?	The `pg_stat_bgwriter` catalog view in PostgreSQL does not include a column named `buffers_alloc`. Instead, it provides statistics related to background writer operations such as buffers cleaned and maximum written buffers. Here is the information available:\n\n```sql\nSELECT \n    buffers_clean, \n    maxwritten_clean, \n    stats_reset \nFROM pg_stat_bgwriter;\n```\n\nThis query will return the current values for `buffers_clean`, `maxwritten_clean`, and `stats_reset`.	[-0.89542735,0.6383442,-3.5151494,-1.9045413,0.78608274,0.6955799,0.13558576,0.27618405,-1.8487778,0.08510315,0.3935749,0.7152258,1.3244176,-0.048416026,0.9655631,-0.6416408,-0.5862962,-1.2857207,0.020384494,-0.31199473,0.330412,-2.017403,-0.8678446,0.035988405,2.197465,1.556546,0.079002835,1.1244156,-0.5880799,0.15753546,-0.8030081,1.490043,-0.64298755,-0.53034437,-0.2952505,-0.41840878,0.48271066,0.68441945,0.13375281,0.06054172,0.09122015,0.19642672,0.5183495,-0.29445973,0.560944,1.0196862,-0.07379064,0.25624302,1.1194068,-0.16209577,0.67315,-0.6814479,1.2060019,0.43563676,0.8071103,0.70169425,0.3086707,0.25187057,0.016883712,-0.74873173,1.6721321,0.6126877,-0.038294762,0.76265115,1.4184088,-0.7267222,-0.42133012,0.5300776,-1.2902107,-1.0539899,0.85161954,0.4175045,0.5840871,-0.40409622,-1.1017916,0.15844324,-0.4133556,-0.63559455,0.07105614,1.1196783,-0.02392698,0.5549936,1.0310886,0.24294646,0.60554373,0.4443087,0.44208574,0.6334422,-0.46578097,0.7074653,-0.34169188,0.9851195,0.6255834,0.62180364,-1.341541,0.73053867,-0.20639741,0.31649658,-0.28926158,0.55274636,-0.70866525,-0.04090121,0.1516742,-0.73523,0.3750724,0.9326851,0.10136231,0.39885727,-0.7294544,-0.47632962,-0.46023193,0.15409487,0.53573763,-0.32089692,-0.064418666,-0.8824831,1.7323103,-0.54618657,0.39296323,1.5397481,0.059070785,-0.30421597,-0.2874922,1.1709181,-0.4056366,-0.75547403,-1.6649382,0.09253785,0.3277952,-0.53420866,0.45301747,-1.3641188,-0.21969119,0.65859306,0.4728252,0.93135226,0.98601854,0.34552747,-0.40841493,-0.17910054,0.11630164,-0.15112382,0.52751493,-0.06071194,0.2685927,-0.3008899,0.7504925,-0.2578737,0.46712375,0.2709844,1.2983522,0.42939538,0.049926095,1.0475532,-0.11731092,-1.7253364,0.38036662,0.20465931,0.674411,0.54615754,1.2829782,-0.6349078,-0.059395485,1.704211,-0.1706458,-0.92778254,0.5246565,0.7085972,-0.15444238,0.5132855,-0.8484001,-0.71088296,0.2978534,-1.058037,0.9002713,-1.0147002,0.088847525,-0.6326583,0.9305316,-1.3861576,0.9586711,-0.29054278,1.1875293,-0.0635313,0.034759473,-0.6761881,-0.8024944,-0.81941426,0.31953472,0.006629848,0.73081195,0.7937614,-0.956744,-0.40224266,-0.8584684,-1.0656188,0.05221762,-0.18141605,0.5469079,-0.5039592,-1.2832673,0.041825313,-0.38508075,-0.04409942,-1.7943211,0.5097097,-0.011783421,0.9817308,-0.65395534,0.5488826,0.5531848,-0.55365014,-0.16511093,-0.093902215,0.33671027,-0.8497737,-0.6479034,-0.20488179,0.2546484,0.1884482,0.24735144,0.2280922,0.32152337,0.4808682,1.0343288,0.73350936,-0.34927875,0.27480465,0.67885804,-0.07898484,-1.2169948,-0.6472458,0.45879644,0.086614095,0.42474395,0.45508775,0.7152435,0.6094314,0.5194249,-0.66691434,0.022597255,0.9078142,0.54807025,0.9987009,-0.22503567,0.9345132,-0.22897908,0.34126586,0.7291447,1.3028071,0.51326,0.25763035,1.4276636,1.4487954,0.88746023,-0.2159467,-0.56047916,-0.39912856,-0.40912205,-0.024511471,0.023852205,-1.2051537,0.91327345,0.32818663,0.6668256,-0.43849006,-0.4396051,-0.68278617,-0.0791331,0.29353294,1.3840958,0.39900059,-0.29185894,-0.024244148,0.5021083,0.47612882,0.4313693,0.09381963,-0.2777831,-0.26203746,-1.177472,-1.5930434,-0.786609,0.03552292,-0.5817741,1.4074142,-0.053022306,0.32830662,0.18003912,-0.2885566,-0.123557165,-0.22932151,-0.79621506,-0.060924817,-0.005097297,-0.19597915,0.6613272,0.28118172,0.7623074,-1.0379914,0.368665,0.30830303,0.36917686,0.4229942,-1.7534561,-0.5796987,0.70157295,-0.23359156,0.4323299,0.07831695,-0.46410757,-0.83337307,-1.1722996,0.07754882,-0.5210206,0.83026105,0.024540152,0.9467966,-0.5986707,-0.47651917,-0.15649892,-0.525877,-0.42173523,-0.5876973,0.08721001,0.27325466,0.29901817,1.1318418,0.071198694,-0.9607252,-0.099322096,0.93026894,-0.026639381,-0.21775231,0.3677973,0.81247836,0.3080013,-0.756367,-0.13939321,0.45937952,1.283345,-0.23655733,0.25698096,-0.9032345,-1.0798053,-1.159149,-0.15705198,-1.1057594,0.9782505,0.08182689,-0.7701959,0.5108897,0.6100953,0.0055606253,0.44270095,-0.6369079,0.3560999,0.009163795,0.673309,0.95664847,0.537111,-0.14697602,-0.13487577,-0.74379367,0.52633053,-0.10651086,0.026519632,0.23024563,1.2999716,0.48790598,-0.8329139,0.038732477,1.1160153,-0.24626176,-0.36417028,0.04020861,-1.4537328,-0.16072989,-0.6967124,0.8470379,1.0801848,-1.2496527,0.6214549,0.40312538,0.20377377,-0.5931731,-0.69515574,-0.55741894,0.23109284,-0.6465897,0.82406723,-0.20140545,-0.6823055,-0.30305105,0.36081403,-0.985483,0.050625246,0.6089241,0.7639562,0.52149594,-0.7874492,-0.90441686,0.5845607,-0.45757604,-0.03045018,1.5434465,-0.21266477,-0.08673398,0.8635864,0.5768869,-0.384417,0.57801884,0.26690963,-1.0668752,0.46886602,0.9223348,-0.006079257,-0.15625522,-0.30364674,-0.67743295,1.0341307,0.0040971385,-0.21936722,-0.48904356,0.5612168,0.3657589,-0.13994543,1.1874057,-0.15062661,-1.5703439,-0.4380363,-0.038773756,1.1098571,1.4889915,-0.49358058,0.8351405,0.21108314,0.19390172,-0.34817383,0.7368572,1.0606538,-1.4082305,-0.6265667,-0.6661197,-0.005650189,1.0262702,0.091183625,-0.22997144,-1.273711,-0.04572251,1.1190388,-0.55746007,-0.9411725,0.20028102,2.0482974,-0.3944084,0.48646593,0.532123,1.0369679,0.44006705,0.34485608,-0.23081005,-0.78599733,0.23600325,0.17575204,0.19470325,0.48590127,-0.9135494,0.8127041,0.67342067,-1.2632688,-0.3202725,0.10647172,-1.3017052,-0.8091129,0.5206555,-0.59104776,0.49722838,-0.15332854,0.41368628,-0.6031797,0.5442861,-0.48103523,-1.4577384,-0.62390155,0.123600915,-0.05988015,-1.0022675,-0.21542141,-0.24790084,-0.40696278,-0.07887335,0.98984134,0.7911638,-0.6212629,-1.2407154,0.6985847,-0.17935117,0.69440615,-0.21675698,0.6155339,0.5824575,1.219455,-0.21145634,0.1104234,0.38108778,1.3708663,-0.16568707,-0.90057725,0.9365777,-0.0921552,0.6470791,1.3046952,0.6033591,0.6942698,-0.72461605,1.0125171,0.15217268,-0.020768924,-0.19792339,0.23364668,-0.32156438,0.21773055,-1.4414117,-1.9006138,0.6275842,0.7745236,-0.3416361,-0.2464023,0.32721704,0.03607312,0.17029738,-0.96368057,-0.18083976,0.88636506,-0.35787505,-1.4184381,0.2564802,0.5781776,1.2757506,-0.49991736,0.20882814,-0.8743211,-0.5395647,0.8073584,-0.4276209,-0.80777705,-0.5403127,-0.1445723,-1.0906103,0.10316153,-0.28586468,1.5699229,-0.18131088,-0.14505862,-1.1967664,0.3399743,0.3291995,-0.115481414,-0.9545843,0.004425778,-0.53926796,0.5969568,0.55156434,0.45608777,0.49441567,-0.28308648,-0.58840245,0.047875658,0.36105126,-1.0678395,-0.8193679,1.1883953,0.81219006,-0.14058785,0.2323798,0.075530864,-0.5504604,-0.7720143,-0.5279838,-0.5772847,-0.84244335,0.07574156,0.5808902,-0.1591005,-0.5199537,-0.12071806,0.1848729,-0.31425703,0.5129853,-0.29266673,-0.24170312,-0.19358717,-0.55077034,-0.53733885,0.7659791,-0.64052427,-0.6478607,-0.2760421,-1.6772301,-0.21828718,1.6844476,1.0023848,-1.3857571,0.55543905,-0.685732,-1.5967503,0.4238146,0.0023060595,-0.7901362,0.52093416,0.2826302,-0.6729025,0.26284444,1.1130465,-0.18327269,1.6428419,-0.021898152,-0.57143533,-0.32933185,0.3044526,-1.256078,1.0255947,-0.8890414,2.0075202,-0.2840792,-1.2265238,0.34562415,1.0827544,1.3586361,-0.5902709,0.78740185,-1.367224,-1.3828939,-0.65392244,0.6001266,-1.7983919,0.8479764,0.9734421,-0.32387733,1.166386,-0.3781136,-0.6159218,-1.0876732,0.44777328,0.26374084,-0.00418682,0.37197113,1.1875136,-0.25514764,0.8732702,0.76998585,0.41650757,0.45635977,0.18535146,0.28509805,0.98252994,-1.0032544,-0.68537855,-0.132373,0.64152384,-1.3879994,-1.37048,0.85111463,0.10941944,0.22961278,0.22704956,0.45467862,-0.5199659,-0.067256555,-0.7561841,0.15525968,-0.8418163,-0.41965204,0.14095539,0.26679048,0.09690611,-0.083006784,-0.50218606,-0.3975945,-0.07378609,0.041267853,0.2676686,-0.050076973,-0.1333184,-0.9733367,0.73118716,0.16079848,0.7937452,-1.3809415,-0.49715528,-1.9815159,0.37547028,-0.21988127,-0.4849046,-0.91405886,-1.6734139,0.07897506,-1.240864,0.78743124,1.0456915,0.662405,-0.543247,1.109097,-0.41901675,-0.19011573,-0.03533915,-1.2224576,-0.06984621,-0.2828791,-1.3030868,-0.6786572,0.09425323,1.0575783,0.8506942,0.06723986,0.15773791,-2.110064,-0.9281704,-0.25761175,-0.023401689,0.026359508,-0.64209354,-0.31483132,0.26367778,-0.11929735,-0.89741313,-0.12993841,0.64590025,-0.15599501,-0.7982409,0.12265017,-1.5706451,1.8602393,-1.0887816,0.69761527,-0.14442104,-1.1766117,-0.5039977,-0.33559978,-0.9407035,-0.42811793,0.20443359,0.7749136,-0.920251,0.06542307,-0.5062712,0.343209,0.3245024,-0.44839698,0.7039054,-0.5953593,-0.0711147,0.036452033,-0.20953074,0.3260461,1.2278961,0.18989727,1.1892335,1.4501437,0.14739296,-0.78422576,0.7912983,0.49041802,-0.7739298,-1.0178132,-0.9299876,-0.14628926]	2026-06-04 20:33:15.203702
 63	run new statistics on postgres database	To run new statistics on a PostgreSQL database, you can use the `ANALYZE` command. This command collects statistics about table data distribution, which can be used by the query planner to optimize queries.\n\nHere is an example of how to run statistics for all tables in a specific schema:\n\n```sql\nANALYZE schema_name.table_name;\n```\n\nTo analyze all tables in a database without specifying a schema, you can use:\n\n```sql\nANALYZE;\n```\n\nOr if you want to analyze all tables in a specific schema:\n\n```sql\nANALYZE schema_name;\n```\n\nIf you need to enable statistics collection for the cumulative statistics system (if not already enabled), you can do so with:\n\n```sql\nSET track_counts = on;\n```\n\nThis command should be executed by a superuser. To ensure that these settings persist across sessions, you may want to configure them in `postgresql.conf` as well.\n\nFor example, to set it in a session:\n\n```sql\nSET track_counts TO ON;\n```\n\nTo make the change permanent in `postgresql.conf`, find and uncomment or add:\n\n```plaintext\ntrack_counts = on\n```\n\nRemember to restart the PostgreSQL service after editing `postgresql.conf` for changes to take effect.	[-0.12379469,0.8966414,-3.8049011,-0.51204216,-0.079674765,-0.8311858,0.428724,-0.043714166,-1.0943205,-0.6176756,0.43299943,0.45191294,0.4795924,-0.27544054,-1.0141463,-0.13555841,-0.5361093,-1.1155623,-0.63917273,0.9482131,0.12801537,-2.1977735,0.2579225,0.5600487,1.5694963,0.59681314,-1.2533395,0.18761191,-0.16167155,0.029304216,0.095618315,1.2281882,-0.68239903,-0.119917676,-0.27408293,-1.4392036,0.073117316,-0.7762455,0.6050073,-0.56013155,-0.15176408,0.08353796,-0.5021152,-1.1535455,-0.33416995,0.1931993,0.27478054,0.5164152,0.57534,-0.43463045,-0.11495415,0.17599551,0.022844497,0.06041789,0.46581832,0.38357925,0.6550509,-0.08257197,0.4435513,-1.8891367,2.6811852,-0.6302644,-0.832712,0.40732187,0.9749855,-0.6868309,0.36068317,-0.24619584,-0.09731768,-0.53426015,-0.18859625,0.68404734,1.2403584,-0.53129023,0.56617045,-0.14380237,-0.27720183,-0.15364744,0.01560639,0.34714776,0.42033333,0.3099075,1.4250462,-0.35713178,0.7945426,-0.5449997,-0.29179138,-0.24584839,-1.344459,0.53160715,0.94532096,-0.04741419,0.6584876,0.90730697,-0.82488585,0.27211067,-0.3190609,-0.13683768,-0.19639918,0.29428837,-0.539355,-0.40049458,0.59023964,-0.1338835,-0.21984959,-0.21028893,0.060714662,0.078625366,-0.9822316,0.81495035,0.35083812,1.6036974,0.10321979,-0.54748666,-0.9548985,-0.051820338,1.0711279,-1.105521,-0.96551764,0.7223267,-0.41557994,0.052502654,-0.39554235,1.0904126,-1.8844435,0.01181077,-1.1228383,0.4887684,0.23716846,-0.25518414,-0.021077862,-0.8068617,-0.8889572,0.68687046,0.91269934,1.6054302,0.6300461,-0.09581563,1.0829895,0.05741023,-0.0066693425,0.043057024,-0.5897192,-0.4311511,0.18423039,0.3289756,0.8208205,0.018947698,-0.35830525,0.6410927,0.09579788,-0.22388873,0.588648,0.16017254,-0.025385624,-0.58595586,-0.5456264,0.2974503,1.2372237,-0.9036444,1.3737533,-1.3440669,0.3178925,0.6768793,-0.053790193,-0.9151963,-0.39991874,0.6592978,0.39121112,0.48796096,-0.8581231,-1.1161592,0.16932157,-0.7959804,0.6184527,-0.45336524,-0.6591619,-0.42688408,1.3549693,-0.23725986,0.6991436,-0.9362156,0.80591327,-0.11783079,-0.8643589,-0.54801416,-0.6877429,-0.10831159,-0.98597336,-0.7136646,-0.20107548,0.9118582,-1.8022124,-0.39452088,0.031693712,-0.20481396,0.42811117,0.06290792,0.30304006,-1.1531161,-0.3942033,0.93801004,-0.866233,0.58428484,-0.25857058,-0.15862162,0.3073705,0.1807042,-0.2154372,1.9065588,1.4901495,-0.30474228,0.63621986,0.9858672,-0.043245636,-0.3209492,0.28170294,-0.08037793,0.44561085,0.3740589,0.34795377,0.7798549,0.23770134,0.9671594,0.8306128,-0.38641104,-0.71698844,-0.22822256,-0.22478338,-0.05756194,-0.8783407,-1.0564785,-0.30062693,-0.2754771,0.21606568,0.25034103,-0.19508556,0.32415307,0.17475796,0.28960142,0.19675505,-0.019092975,0.18186209,0.5090808,0.7402185,0.06587382,0.069870465,0.74309653,0.5546762,0.9653079,0.8005742,-1.1789659,-0.14066222,0.868837,0.66076195,-0.8960084,-0.8220579,-1.0469424,0.22810297,-0.38198894,-0.29855546,0.078117564,0.14199898,0.6300368,0.39674956,-0.3132879,-0.896733,-0.5673163,0.60403466,-0.41800752,0.26357257,-0.32696635,0.36907333,0.59478,1.2777921,0.15481797,0.932614,0.06151862,-0.20442395,0.755056,-1.3516672,-1.8154342,-0.72258157,0.056916423,-0.30335695,0.07723587,1.6199915,-0.389044,-0.15346572,0.4290842,1.6020069,0.12498249,-0.09204653,0.54208666,-0.1683464,0.100266814,0.13199764,0.12309714,1.7195677,-1.1681235,0.049823523,0.28971967,0.9170001,0.9097494,0.24850245,-0.59694004,0.012421266,-0.19053003,-0.02400035,0.4280099,0.48486766,0.031955272,-0.72234035,-0.4194189,-0.84250355,-0.0014829378,0.8498108,0.26744363,1.0365754,-0.4574372,0.5789131,-0.99060833,0.0041691153,-1.0417969,0.19315991,0.21601573,-0.3283387,1.4761698,-0.7299842,-0.45848364,0.49542245,0.5479734,-0.108275354,-1.1004825,-0.1147992,0.6695534,1.6810448,0.7324785,-0.32568958,1.5230677,0.70604056,-1.3399506,-0.7522269,-0.8758192,-1.0889727,-0.0049496247,0.048060887,0.2431902,0.40665245,0.38004988,0.005184233,0.8321654,0.15214542,0.1373334,0.37938282,-0.5537542,0.88511646,-0.30264297,0.39189357,0.28454542,0.5983318,-0.2623229,-0.3498134,0.45208412,0.09444912,0.5634909,0.66331565,0.1776087,0.80190724,0.4884011,-1.0429403,-1.0332012,0.803222,-0.49951586,0.00984285,-0.20827591,-0.6913315,0.22219737,0.23763847,1.4820137,1.0061378,-0.8632908,0.3432998,-0.42495108,0.0074499436,-0.756214,-0.360543,-0.24226487,-0.21128598,0.74054897,-0.2489334,-0.5747455,-0.95659477,-0.09471788,0.36561918,-0.95541084,-0.9998828,0.06275147,0.7555109,0.43042296,-1.6087574,-0.79578865,0.3042472,-0.75685084,-0.5023617,0.7300933,-0.5500362,-0.1563299,0.42785746,-0.033832215,-0.41948223,0.3456296,-0.005365343,-1.3199551,-0.7685052,0.8036494,1.0387609,0.62888217,-1.2098641,0.9177801,0.80244195,0.7021283,0.9411359,0.27175543,-0.3714923,0.08302991,0.9781829,0.56492776,-0.23988774,-0.9811069,0.59413606,0.7141651,0.8577877,0.23501313,0.15745151,0.17233905,0.51769245,0.28186756,-0.07248282,0.061799128,0.92410135,-0.55938333,-0.114585206,-0.124116585,0.21736114,1.7445781,0.10193223,-1.502909,0.47771263,0.9745431,0.049849004,-0.4040803,0.45780605,0.012554382,1.508292,-0.29588833,0.43955892,0.44595948,0.22131617,1.9046447,-1.4101903,0.29555824,-0.72037303,-0.8546588,-0.79831666,-0.3462713,-0.23779914,-1.2625952,0.73758465,-0.74594414,-1.3337615,-0.0011533761,0.9887986,-0.95885974,-0.37254503,0.3445879,0.6154162,0.40591735,0.98438656,0.43458113,0.7978283,0.7922318,-0.2259723,-1.5296367,-0.43905187,-0.31169072,0.56755906,-1.4436224,-0.5407835,-1.2185205,-0.51070416,0.20788857,1.321579,0.8554966,-0.10524048,0.09830842,-0.023543535,0.05783413,0.39125523,-0.17013597,0.41825908,0.8696702,0.07607354,-0.7688345,0.34031412,-0.73917353,1.374316,0.25946715,-1.0308263,0.25353235,-0.40441126,0.4416862,1.0046513,0.21949708,-0.060754694,-1.1544094,0.28934678,-0.44401765,-0.9212843,0.21795574,0.3264412,-1.0668097,1.0195544,-0.26267052,-1.4509758,0.30661467,-0.025882605,0.28429455,0.4102506,-0.78511083,0.19862762,-0.61594856,-1.142369,-0.43999285,-0.68261963,-0.84944975,-0.8813284,0.04450119,0.30863675,1.3446143,0.18587941,-0.17343645,-0.019655723,-0.88232327,0.2317538,-0.84747344,0.23846075,-0.17271684,-0.42866126,0.07912393,-0.16029009,-0.11865995,0.019847225,-0.9564446,0.03280507,0.31249505,0.9906581,0.23081112,-0.26335213,-0.15641154,-0.74494326,0.067500524,1.937684,0.26784858,0.5753832,0.3426419,-0.115936674,0.552786,-1.2455901,0.31366906,0.2005301,-1.0677266,0.3246873,-0.2752048,0.51262325,0.6884104,0.5754952,-0.03196428,-0.59858584,-0.24361742,0.29970068,-0.7783294,-0.7721301,0.6147827,0.1258912,0.15044807,-0.041966878,0.4975311,-0.03967022,-0.57243574,-0.77023685,0.00086031406,-0.50839716,-0.4845263,-0.3693874,0.74684143,0.29158777,0.50470346,-0.37393573,-1.1059554,-0.68458736,-1.0654112,1.4136034,-0.9251197,-0.5301444,0.11078845,0.060228996,0.82608366,-0.40166074,-0.15888584,0.6580148,-0.89235526,0.21772607,0.18777451,0.7401228,-0.81062347,0.8765584,-0.18424127,0.53264725,-0.14883858,-0.3348634,-1.3361179,0.30948216,-1.9272289,0.9908873,-1.0089104,-1.2512387,-1.5904442,1.0060068,0.57107055,0.14249714,1.5907199,-1.8117338,-0.14994612,-1.0396004,1.4689184,0.27940786,1.7312177,1.3192012,-0.102178335,0.5140492,0.021203678,-0.7494684,-0.4808596,0.09780086,-0.02060673,0.4436841,1.313788,0.2818453,-0.36751878,1.7007265,0.72436935,0.8035056,-0.20801277,0.03055602,0.038284343,1.2194669,-0.19736676,-0.016554138,-0.7767924,0.1528249,-0.04595948,-0.1645172,0.14410791,1.1506895,-0.012117469,0.32609826,0.049145475,-0.6609411,0.5259713,-0.3729989,-0.1555675,-0.4465281,0.59410954,1.1287261,1.5564234,0.61318094,-0.3918097,-0.5951597,0.32617813,0.49072742,-0.08604786,-0.27342063,-0.50987816,0.38782072,-0.42833167,-0.20079057,0.48293257,0.3755853,-0.20593533,-0.8708395,-1.2815753,-0.38000602,0.30017212,-0.62473136,1.0418961,-0.10746555,-1.1642194,0.1522052,1.7537019,-0.41228113,0.9265939,-0.21367319,0.5458789,-0.5371009,-0.81387746,1.1582104,-0.33920643,1.2617294,-0.726609,-0.82585275,-0.62989813,-0.124620125,1.4475639,-0.007706958,-0.023124034,-0.46948463,-1.802342,0.30739087,-0.7841943,0.25448924,-0.12587374,-1.2546568,-0.27193683,-0.016221989,-1.3984383,-0.19866294,0.0013205931,0.77119344,-1.0129261,-0.49261588,-0.97729766,-1.4286083,1.2443761,-0.41706237,0.30110222,-0.58228624,-0.8959532,-0.07608955,0.23839343,-0.8044771,0.53768575,0.18549924,0.7393316,0.6401645,-0.20525463,0.049686495,0.90525925,1.0351202,-0.076890245,0.17275377,-1.1740888,-1.1002029,0.49326906,-0.4302327,-0.17104915,0.36695066,0.6043349,1.1456487,0.40519753,0.8042346,0.41529927,0.080819644,-0.0274221,-0.46793923,-1.8523152,-0.07775865,-0.3036154]	2026-06-04 20:42:01.015474
 64	change shared_buffers value to 2GB	To change the `shared_buffers` setting to 2GB, you need to modify the configuration file (`postgresql.conf`) and ensure that it is set at server start. Here are the steps:\n\n1. Open the `postgresql.conf` file.\n2. Set the `shared_buffers` parameter to 2GB.\n\nHere is the exact command to edit the configuration file:\n\n```bash\nsudo nano /etc/postgresql/18/main/postgresql.conf\n```\n\nFind the line that says:\n\n```plaintext\nshared_buffers = 128MB\n```\n\nAnd change it to:\n\n```plaintext\nshared_buffers = 2GB\n```\n\nAfter saving the changes, you need to restart the PostgreSQL service for the new configuration to take effect. Here is the command to restart the service:\n\n```bash\nsudo systemctl restart postgresql-18\n```\n\nThis will apply the new `shared_buffers` setting to your PostgreSQL database.	[0.5942215,-0.17199539,-3.1491473,-1.2871428,1.6108719,0.16396634,0.14805077,0.26563472,-1.1880275,-0.45272738,-1.5765197,1.7883959,0.9251213,1.2675575,1.1242628,0.5424983,0.46739435,-0.8681798,-0.3919422,0.8909348,-0.8850342,-0.07455508,-0.79766285,-0.73723215,2.2771106,0.7824304,0.25307497,0.68503433,-0.8661977,0.8893914,0.58703005,-0.048769068,-0.7062567,-0.44203368,-0.67782456,-0.095236644,0.33181354,-0.9681848,0.12039684,-0.21970347,0.08737168,0.801973,0.9873227,-0.3962924,0.44642973,0.4935913,1.2441146,0.6009957,1.9476271,-0.800766,-0.21953785,0.7606668,-0.471627,-1.002882,1.8182418,0.7628219,-0.09445377,1.4222505,-0.5073452,-0.13800064,0.67095435,1.1393652,-0.092603765,0.92839205,1.2190727,0.6315224,0.10057966,0.8112752,-0.24494727,-0.24754484,-0.0927826,0.7751023,-0.28830892,0.5550444,0.23144051,-0.27346787,-0.45123768,-0.60450125,-0.2283926,0.5015191,-0.76308376,0.12765844,1.1732883,0.13482499,1.5113711,0.6093322,0.084808886,0.54183894,-0.94766647,1.5324177,-0.72440654,-0.26442328,0.926437,0.88973,-1.5357964,-0.7616496,0.23156722,0.112659216,-0.22399375,-0.51889783,-0.36733678,0.50327677,1.0289423,0.33874112,-0.28082424,-0.054771833,0.22408912,0.82717514,0.07195146,0.6004224,-0.23212199,0.4226555,0.37167007,-0.45988193,1.5363111,-1.2685792,0.62052965,0.042967953,-0.8463596,0.10069661,-0.3752187,-0.3169907,0.31844252,1.6537559,0.57393193,0.008745045,-1.1323509,0.7151743,0.6984058,-1.9440418,-1.0713663,-0.6572712,-1.0626947,-0.3306512,-0.21901591,0.15657525,9.85764e-05,-0.78582543,-0.13760227,-0.317777,-0.72990817,0.4717428,-0.3431863,-1.1203196,0.06496829,-0.75610405,0.38846707,-1.0851281,-0.29930526,0.4145627,0.57479405,0.6326719,-0.7038143,1.1849654,0.928984,-1.403085,0.42133737,-0.20254505,-0.035943888,0.2594574,0.27712592,-0.03847156,0.047548726,0.3865189,-0.3246856,-1.6082604,0.05743572,1.1385016,0.28042966,0.9673045,-1.3797044,-0.9495904,0.16947967,-1.0760131,-0.9092447,-0.0005596012,-0.5881115,-0.13340929,0.17860763,-0.053782742,0.5431691,-1.1530731,2.265598,-0.31245095,-0.2426286,-0.14733073,-0.6869001,-0.1892378,-1.2336452,-0.563989,-0.47811514,-0.73683274,-0.73029584,-0.55091375,-0.035663076,-0.6329243,1.2975788,-0.3984424,0.5454534,-0.08482142,-1.5849781,0.08845972,0.055033434,0.2807854,-1.3989632,0.21552499,0.8531264,-0.2931518,-0.2880241,0.8743933,1.0702503,-0.2579379,-0.9481066,-0.67148536,0.36111915,0.79665136,0.20545988,-0.57891303,0.016849037,1.26163,-0.19787338,-0.9733616,-0.01935209,1.0571369,0.38602594,-0.92564917,-0.26626584,0.10365467,0.268814,0.067036204,-0.04507976,-0.9138405,0.19857967,0.741737,-0.21464887,-0.0979421,-0.48454255,1.9499489,0.28333145,0.41875824,1.3744552,0.23726848,0.086491406,0.49016562,-1.0069497,2.0370233,0.71381456,-0.4550193,0.9799527,0.96806955,-1.0241945,-0.75917196,0.56172824,1.7523041,0.52857697,-1.0024862,-0.7482487,-0.36431426,0.49851817,-0.9415097,0.022706177,-0.19566743,-0.50201094,-0.0138560785,0.27875376,-0.46962476,-0.74138826,-0.12662092,0.3929178,-0.46762723,0.48084188,0.5718569,0.59963846,2.02351,0.6245468,0.6364585,0.69375455,-0.32587475,-0.24607155,-0.0816415,-1.5290926,-0.19567606,-1.0550418,0.0020223968,-0.5614003,0.31357056,0.47216988,-0.5245898,0.29488474,0.9620137,-0.40168333,0.050821066,-0.85866535,1.7286408,-0.0053396174,0.005166708,1.5161694,-0.46263728,-0.2749271,-1.1136981,0.010240218,1.4117157,-0.5422877,0.793138,-0.20891199,0.008090615,0.009514731,-0.12729838,0.23177107,1.2066041,-0.14974456,-0.38811702,-0.1563496,0.456818,-1.0569465,0.33574194,1.1614383,0.11237099,0.060694735,-0.80320567,0.2770084,-1.3693233,-0.32967108,-1.4521964,-0.9691399,1.4697539,0.37053758,0.7857368,-0.09347938,-0.027024562,-0.7642375,1.2975056,1.1498952,-0.31784695,0.07910754,0.82735795,-0.5717471,-0.080921605,0.13643607,0.7554542,-0.3320126,-0.8940843,0.20864502,-0.03547474,-0.26965314,0.6214297,-0.061346658,-0.92955273,1.1994374,0.31226364,-0.99797547,0.71401095,-0.08397345,0.6624018,0.10085331,0.0477166,0.29232165,0.80850667,-0.3133257,0.58930576,1.1399523,-1.091203,-0.034483775,0.63095975,-0.5733325,1.0998862,-0.19579852,-0.08071471,0.0666125,-0.291386,-0.09033239,-1.106147,-0.14917591,-0.45857152,0.6952763,-0.98163146,-1.0987685,-0.3451355,-0.72962475,1.0667328,-0.03539649,-1.239531,-0.14377357,0.31918123,0.61627567,-0.19806768,0.91749096,-0.5775515,0.08202559,0.18593317,-0.42547226,-0.24346873,-0.10705018,-0.16970791,0.15461615,-0.48976383,0.46279645,-0.50278664,1.3547889,1.0046291,-1.2297262,-1.5080673,0.10543684,-1.3250339,-0.19755259,0.109582625,-0.1245442,-0.6282795,1.2594588,-0.7733935,0.099881925,-0.34167618,-0.24310791,-1.4808185,-0.30400482,0.023479342,1.297995,0.22519283,0.21784358,-1.1962506,0.8007247,1.0994838,-0.7429472,-0.26498803,1.3853714,0.28221193,0.20435801,0.5951179,0.64521706,-1.0027074,0.7375404,1.1434263,1.240003,0.1097314,0.27677178,-0.29543835,0.8127968,-0.22191589,-0.9972749,1.1103147,1.0904295,-0.27613518,-1.3322843,-0.12073727,0.8984682,1.7084376,1.1082901,-0.8413695,-0.2740894,0.7804271,0.905423,-0.15043943,0.20951614,0.6784049,1.8708057,-0.52737963,0.21246651,0.5061808,0.05206517,0.3879512,-0.53381425,0.06185338,-1.1951044,-0.81079423,-0.15675415,-0.63139546,0.053201847,-0.62850916,1.7239596,1.4805204,0.1885149,-0.27011663,0.41933307,-1.0940143,0.49505314,-0.37783793,0.11819273,0.2551332,1.4913357,0.49064317,-0.22607195,0.8561436,-0.13301614,-1.193825,-0.12924454,0.41844183,-0.63465685,-0.47360262,0.4114202,-0.06764502,0.28607857,0.9877149,1.2384717,0.86650217,-0.35761946,-0.38124397,-1.8003428,-0.115203574,0.2137721,-0.48495668,0.1457234,0.89959973,0.75908905,0.01945493,0.4660677,-1.0319624,0.2984663,-0.47176814,-1.6122967,-1.2133033,-0.6336529,-0.47520047,0.7649109,-0.3808701,0.94225323,-0.7453245,0.24855654,-0.94356775,-1.6788714,0.056508698,-0.09018815,-1.1564851,-0.9096611,0.37690717,-0.66120374,0.38971195,0.075839914,-0.04083744,-0.68344516,-1.1731582,-0.61456496,-0.30274156,-0.7923194,-0.19438723,0.53518903,-0.48306775,-0.22642574,0.3450607,-0.26413646,1.451957,0.34276766,0.048872836,-0.15822063,-0.06967852,-0.3127996,-0.8129511,-2.0658686,-0.14272001,0.012301737,-1.4717705,0.83542615,-0.83410627,1.1863099,-1.075758,0.33142635,0.05602328,0.36017233,0.03807252,-0.22197726,-0.1899132,-0.49848193,0.7239772,1.2804244,-0.22002137,0.23977652,-0.19525914,1.0577135,0.4159432,0.46568576,-0.5682301,-1.2709973,-0.48003975,-0.55790365,-1.1347266,-0.64951766,0.48156303,-0.015808033,-0.13078988,-1.2025381,-0.1430802,-0.43137288,-0.81436193,-0.37553173,0.19045411,-1.4250021,0.9876455,0.004263954,-1.638072,1.8657831,-0.72684175,-0.82768,0.057919987,0.0780241,0.25034675,0.20058295,-0.32570332,-1.0748863,-0.2152766,-0.13655154,-0.6934082,1.033266,0.6997882,1.1573434,-1.5374963,-0.74694455,1.5851405,-1.1847384,0.27035806,0.059686024,0.53678125,0.8673277,-0.26176372,0.25060424,0.0019140437,0.402447,-1.0961767,0.72719365,-0.13739567,-0.99430895,-0.09668457,-0.576153,-0.9597496,1.1388956,0.48893628,1.4011991,-0.17463963,-1.9259781,0.2666931,-0.7052702,0.866502,-0.60383993,0.7817658,-1.2378556,-0.339427,-1.1290368,0.9022096,0.5119308,1.3536294,-1.0442904,0.68704736,0.25872853,0.18566488,0.2970721,0.17978616,0.5886494,-1.0513037,0.6958795,0.075804204,-0.09735815,0.007178338,0.7914562,1.4514716,-0.13204564,1.0703797,0.45529693,-1.3079423,0.040256746,-1.0972872,-0.13347417,0.18765296,-0.53753763,-1.1362079,-0.098933145,0.093640134,1.1067789,0.2819172,0.31763285,0.23327537,-0.59725535,0.37402046,0.9014799,0.0479356,0.38618162,-0.40894714,0.4606687,0.72000766,0.11130738,0.5519639,-0.5339185,-0.14926046,0.1134966,-0.31705508,0.7076367,-0.14119573,-0.5205851,-0.034310266,0.35234302,0.5186852,-0.112590834,-1.5231125,-0.18155026,-1.4230444,-0.52417684,-0.42850643,0.43466154,-0.098589785,-0.1914801,0.14021364,0.21353047,1.4447894,-0.014958335,-1.0799458,-0.28748196,0.9597685,-0.20237899,-0.2779625,-0.52324593,-0.23990814,-0.87092716,-0.88612014,-0.58019155,0.407756,0.8030633,0.9782959,1.5689958,0.45038733,0.40558997,-0.8784642,0.7020004,1.2321012,0.43361458,-0.6864947,-1.9193571,0.13927251,-0.07860337,-0.19082971,0.9015871,-0.9366953,0.08719401,-0.21531539,-0.13890865,-0.08507942,0.33975357,0.29385138,0.27449122,0.37932485,-0.06476249,0.4652741,-1.4512265,-0.41069967,-0.61605334,-0.024392031,-0.16861467,0.93276584,-0.79255366,-0.49598607,-0.72457635,0.13532206,0.30110478,-1.0356113,-0.03253285,-0.964393,-0.73539245,1.1828388,0.21851785,-0.24103872,0.3813035,-0.25950313,0.7407809,0.2886636,0.6001449,-0.12334583,0.23316827,-0.21123314,0.560897,-0.957454,-0.30780673,-0.09916241]	2026-06-04 21:13:50.09497
+65	get data_directory path	To get the path of the `data_directory`, you can use the following SQL query:\n\n```sql\nSHOW data_directory;\n```\n\nThis will return the current `data_directory` setting, which indicates where your PostgreSQL cluster's data files are stored.	[0.7066749,0.42155534,-3.150414,-0.4718943,0.052419722,-0.48442283,0.4820092,0.057108633,-0.5766039,-0.98365545,0.25437745,0.96965903,1.8546257,-0.26176992,-0.7140135,0.025531167,-1.6179842,-1.1810455,1.0315688,-1.150719,-0.06718566,-0.45532322,0.35984716,0.43477273,2.8418326,-0.35223573,1.0443137,-0.47384137,-0.95278496,1.276709,0.31481743,0.14708069,1.3915752,-0.04393282,-1.3544148,-1.1096452,0.07899275,-0.62916327,0.08622658,0.40042663,0.30096865,-1.0215397,-0.3274056,-0.98445827,0.07392162,-1.2813866,0.1692075,-0.15282175,1.1083452,-0.4238909,-0.4131733,0.7933652,-0.4983318,0.6668125,0.17606549,0.34398356,0.99304754,-0.31597325,0.032485418,-1.0549756,1.7687885,0.7953244,-0.053398404,0.83839136,0.48287174,-0.50764364,-1.4719146,0.54953676,0.042853903,-1.293925,1.6633635,0.17227292,0.74593693,-1.0649056,-0.019940065,-0.100856565,-0.45826048,-0.95860255,-0.056816995,0.5656993,0.2825902,0.13965175,0.9949373,-0.58577645,-0.4260211,1.1826812,-0.36502877,1.0924864,1.1825447,0.55210686,-0.005152448,0.19667305,0.9428322,0.41064128,-1.6082039,0.7406231,-0.22446868,0.4903521,0.24038516,-1.424601,0.5345553,-1.2452015,0.4842803,1.3721412,0.3280184,0.40403658,0.29263186,0.35230538,-0.8185392,0.41707754,-0.7625298,0.3606558,0.009541587,-0.6001211,1.5768536,-0.2643996,1.2168761,-1.2707214,-1.4026731,1.0650798,-0.5767632,-0.2964432,-0.010066651,0.94057184,0.72565204,0.56901747,-1.1938177,0.089563884,-0.010212981,1.1947206,-0.30438688,-1.2763805,-1.3741909,0.6006431,0.9345848,-0.553222,-0.0672692,-0.6706835,0.31827024,0.83038515,1.1237181,-0.061620973,-0.41967744,-0.19231203,0.22489634,-0.9302945,1.0299003,-0.0115986485,-0.26447576,-0.18152328,-0.43900806,-0.16310643,0.5771241,0.022128249,0.07511898,-1.8323661,-0.06408495,0.8529478,-0.12005334,-0.47135243,0.28636497,0.48447517,-0.25065297,-0.08083909,0.14415868,-2.157645,0.7912529,0.8056583,0.9962214,0.121805735,-0.6184493,-0.85326755,-0.122980334,-0.28304964,-0.59944564,-0.460953,-0.29883328,-0.22776222,1.2811097,-0.8570218,0.8969694,-0.65298367,1.5173358,0.71169037,-0.4880735,-0.38849142,-0.21982507,-0.33562914,-0.86527383,-1.2842373,-1.2205108,0.44768688,-0.03369663,-0.29797786,0.7715878,-0.7526292,0.73311836,-0.7532584,1.1763452,-0.382965,-0.37304112,0.1517401,-0.8228583,0.7534188,-0.31737632,1.7464437,-0.9977773,0.63923025,0.12579037,-0.048749886,1.5396608,0.08820619,-0.46536472,-0.4064014,-1.1795864,-0.34177426,0.18446876,-0.6250971,0.19375451,0.0929953,0.6858105,-0.16179626,-0.43108186,-0.44321236,1.4157099,0.63775456,-0.9530338,-1.1870701,-0.79983914,-0.21986423,-0.9860438,-3.1875293,0.31513527,0.573091,0.1959174,0.09577135,0.73029107,0.6293151,0.9362144,0.6828259,-0.6556434,0.26473054,0.3324402,-0.31591773,-0.43176204,0.8198438,0.010919438,-0.34933499,-0.051873725,0.50459415,1.216426,0.58517796,0.01969774,0.6463555,0.4618182,-0.8393597,-0.47562176,0.16723333,0.49890235,-0.5976576,-0.19701768,-0.31432292,1.0875976,0.08042051,0.2963145,-0.33641484,0.21982788,0.019682968,0.1797612,-0.97524005,0.30116168,0.23459038,0.13031167,-0.33346587,-0.30410042,0.7742747,0.809259,0.9416874,-0.79265463,0.25068778,-0.54731065,-0.15093169,-0.64510447,0.96258456,-0.12554213,0.78778803,1.0882548,0.35090396,0.47925058,0.93319,0.95527977,-0.39729646,-1.3350008,0.93109226,-0.05080124,-0.80661786,0.765366,0.4522654,0.9204927,-1.0235612,-0.042548005,0.25780508,1.3495702,-0.19096957,-0.23681453,-1.2770994,1.1011517,-0.72296005,1.2178875,0.1443267,0.12177578,-0.07947392,-0.0404706,0.11401384,0.60621923,0.4040512,0.13382587,0.12135418,1.5115976,0.21414098,0.3862038,-1.699783,-1.6177019,-0.56867665,-0.5375954,0.66611195,-0.35751843,1.1294693,0.26044923,-0.3765228,0.19589749,-0.23143224,-0.8398208,0.029945234,-0.44787836,0.6524391,0.1807537,-0.51208216,0.30385002,0.9294875,0.37077358,0.3719549,-0.5438421,-0.482012,-0.7281982,0.5356383,-0.48919192,0.1940036,0.49813312,1.4390837,-0.4872792,-0.14265315,-0.9937902,-0.45052126,-1.2615678,0.845424,-0.08499581,0.33255652,0.7677523,-0.07520715,0.21681532,-0.4135929,-0.07279278,-0.32420877,0.33479136,0.3856437,0.13936946,0.37181944,0.8319875,0.6629118,0.25679958,-0.86434907,1.0297478,0.36351854,-0.09248669,-0.13373376,-1.3419482,-0.7736257,-0.012384749,1.5338415,0.56749964,0.19356139,1.6162428,0.7835397,-0.16048995,-0.54754996,-0.54566413,0.3138408,1.1044054,0.78039753,0.3819546,-1.0537997,-0.4610856,0.35446313,-0.03144743,-0.54662526,0.14901212,1.9547764,-1.3641349,0.4043648,-1.27588,-0.7736114,0.8458095,0.41062504,-0.36362973,1.3406293,-1.2195202,-1.8512743,1.3998517,0.3718148,0.74172384,-0.11441689,0.2885719,-0.92481315,-0.8095302,-0.38250762,1.83875,-0.7462612,-0.30614427,0.91058105,0.9342379,0.1548105,0.15619788,0.069444,-0.61817276,0.5206278,0.948844,0.2221582,-0.9442004,-1.1713855,-0.17656504,0.1907438,0.04980657,0.44594613,-1.8326277,0.80763,-0.08839504,-0.067038134,-0.43721876,1.412774,0.2702863,-0.7128779,0.4862439,-0.48988774,-0.04390409,1.4653293,1.5489496,-1.0882967,-1.3651696,0.5915087,0.22346723,-0.042752624,0.18151654,0.30403796,1.6148255,-0.45421845,-0.81352854,-0.28412196,0.6550278,0.41246966,-0.81565034,0.48530373,-0.44022182,0.13434523,-0.7183506,-1.666267,-0.1117075,-1.1433471,0.8805348,1.6500434,0.03158984,0.6957775,0.041270517,-0.818945,0.3697221,0.08764768,-0.95794976,0.17984343,0.16033022,0.24186993,0.19873103,-0.18221413,-1.0385818,-0.27131227,0.031441204,0.1523253,0.3944691,0.39495692,0.7606688,-0.37257847,0.6208908,-0.03736639,0.76570284,0.49602047,-0.48832217,-0.22330739,-0.93964446,0.08367323,-0.64593214,-0.67690915,0.15561724,0.10344424,-0.37064895,-0.61831224,0.6086402,-0.54504275,1.4501965,0.07655909,-1.9734079,-1.3640893,-0.0031135168,-0.39211783,0.37066865,1.3752205,0.7736474,-1.1167691,0.17506824,1.6569241,0.62223274,0.612239,-0.8372385,0.106194414,0.5613058,-0.88926095,0.06768526,-0.030497458,0.09544093,0.0065692994,0.6855768,-0.32387406,0.89128625,0.16070424,-0.58049196,-0.5865499,-0.7031083,-1.0839437,0.15883067,0.74290645,-0.2077603,0.6626955,-0.32107833,-0.52313006,-0.62752056,-0.61506087,-1.6105441,-1.1258656,-0.27314186,-0.5056319,-0.071122885,0.11173655,0.38535672,-0.5360743,-0.014863829,0.064198315,-0.8533354,-1.9447377,-0.46687222,0.33487168,-0.86791277,-0.28541464,1.202626,0.046484716,1.3184208,0.9952988,-0.11792384,-0.6432492,-0.28729573,0.98302585,0.43786454,0.61047786,-0.30123138,-0.8793384,-0.25962812,0.8843805,0.4065189,0.6905255,0.76788706,-0.3228877,-0.9929624,-1.0185897,-0.03420708,-0.25413546,0.678902,0.520535,-1.030037,0.92407507,0.070468076,-1.5101591,-0.040236417,-0.40631938,-0.46534,0.5001719,0.39589328,-0.03429975,0.15567245,0.5557819,0.30885664,-0.082588956,0.24676777,-0.0746001,-0.40395528,0.6845179,0.20825556,-0.16483228,-0.701135,0.9765421,-0.5478577,-0.20551695,-0.5143982,-0.61773545,1.5682986,-0.06292153,-1.3192555,0.1359647,0.2665337,-0.5400741,0.37707153,0.95697707,0.4600688,0.1626488,-0.38698402,-0.04842196,-0.17607297,-0.30618653,1.3792676,-0.28122285,-1.7300214,-0.23685597,0.09364108,0.961815,0.39233282,0.4679933,-1.4920986,-0.9109811,-1.405439,0.37449694,-0.29345185,0.66221035,0.33353186,0.82428324,1.9347781,-1.226161,-1.5671536,0.48705056,-0.22248986,-0.48679775,0.004618021,0.92423785,1.1981264,-0.99340665,1.3972725,0.92208797,1.2337123,0.2547225,0.1562989,-0.44156584,-0.8077255,-0.72626954,-1.5782803,-0.49740848,-0.0804911,0.40218696,-1.0570738,-0.07422558,1.1382809,-0.4664809,0.037,1.0818874,-0.5735151,0.24763778,0.4098281,-0.0032273328,0.74501556,0.79400605,0.052934267,1.5204289,-0.0731075,-0.5769592,-1.4967567,0.36611423,0.27902386,-0.6581749,0.81074005,-1.0761602,0.29751486,-0.41234517,-0.6627665,-1.4809005,-0.52361315,-0.84379107,-1.9914339,-0.7300344,-0.74502563,-1.46284,-0.72390515,0.31173262,0.43809482,0.055321414,-0.73344654,1.8078414,0.5058717,-0.63913524,0.02827209,0.73779726,-0.7998175,0.15858658,0.50743705,-0.34241864,-0.6130027,1.0814061,0.9540828,0.05815313,-1.2563292,1.6697398,-0.22125094,0.85811126,-0.15847747,0.062300157,-1.1167899,0.41749766,0.6126205,-0.45162433,-0.8268791,-0.63521594,-0.7539138,-0.8106667,-0.62305826,-1.0578614,1.6291457,-0.7537108,0.24712256,-0.67996055,0.3386263,-0.28755865,-0.13716286,0.29309434,-1.7206842,0.028184474,-0.6008564,-0.0655005,0.9011014,0.9275347,-0.33848983,1.3567016,-0.15880069,0.2793972,-0.33840817,1.0949401,0.9522753,0.4314193,-0.04086813,-0.51229477,-0.80950075,1.3686816,-0.9827542,0.42815977,0.33658388,0.24746801,0.9242824,1.3889494,0.2908552,-0.45104694,0.8721164,0.5533951,-1.3199368,-0.806266,-1.0280691,-0.09427202]	2026-06-05 19:02:07.315703
 \.
 
 
@@ -1459,6 +1704,20 @@ COPY tools.pg_tools (id, tool_name, tool_type, version, metadata, created_at) FR
 
 
 --
+-- Name: chat_history_id_seq; Type: SEQUENCE SET; Schema: rag; Owner: rag
+--
+
+SELECT pg_catalog.setval('rag.chat_history_id_seq', 4, true);
+
+
+--
+-- Name: deterministic_fiches_id_seq; Type: SEQUENCE SET; Schema: rag; Owner: postgres
+--
+
+SELECT pg_catalog.setval('rag.deterministic_fiches_id_seq', 45, true);
+
+
+--
 -- Name: documents_id_seq; Type: SEQUENCE SET; Schema: rag; Owner: rag
 --
 
@@ -1466,10 +1725,17 @@ SELECT pg_catalog.setval('rag.documents_id_seq', 1041, true);
 
 
 --
+-- Name: history_actions_id_seq; Type: SEQUENCE SET; Schema: rag; Owner: postgres
+--
+
+SELECT pg_catalog.setval('rag.history_actions_id_seq', 1, true);
+
+
+--
 -- Name: semantic_cache_id_seq; Type: SEQUENCE SET; Schema: rag; Owner: postgres
 --
 
-SELECT pg_catalog.setval('rag.semantic_cache_id_seq', 64, true);
+SELECT pg_catalog.setval('rag.semantic_cache_id_seq', 65, true);
 
 
 --
@@ -1487,6 +1753,30 @@ SELECT pg_catalog.setval('tools.pg_tools_id_seq', 1, false);
 
 
 --
+-- Name: chat_history chat_history_pkey; Type: CONSTRAINT; Schema: rag; Owner: rag
+--
+
+ALTER TABLE ONLY rag.chat_history
+    ADD CONSTRAINT chat_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deterministic_fiches deterministic_fiches_pkey; Type: CONSTRAINT; Schema: rag; Owner: postgres
+--
+
+ALTER TABLE ONLY rag.deterministic_fiches
+    ADD CONSTRAINT deterministic_fiches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deterministic_fiches deterministic_fiches_user_query_key; Type: CONSTRAINT; Schema: rag; Owner: postgres
+--
+
+ALTER TABLE ONLY rag.deterministic_fiches
+    ADD CONSTRAINT deterministic_fiches_user_query_key UNIQUE (user_query);
+
+
+--
 -- Name: documents documents_pkey; Type: CONSTRAINT; Schema: rag; Owner: rag
 --
 
@@ -1500,6 +1790,22 @@ ALTER TABLE ONLY rag.documents
 
 ALTER TABLE ONLY rag.documents
     ADD CONSTRAINT documents_source_chunk_key UNIQUE (source, chunk_index);
+
+
+--
+-- Name: history_actions history_actions_payload_key; Type: CONSTRAINT; Schema: rag; Owner: postgres
+--
+
+ALTER TABLE ONLY rag.history_actions
+    ADD CONSTRAINT history_actions_payload_key UNIQUE (payload);
+
+
+--
+-- Name: history_actions history_actions_pkey; Type: CONSTRAINT; Schema: rag; Owner: postgres
+--
+
+ALTER TABLE ONLY rag.history_actions
+    ADD CONSTRAINT history_actions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1639,6 +1945,20 @@ CREATE INDEX idx_documents_url ON rag.documents USING btree (url);
 
 
 --
+-- Name: idx_history_actions_query; Type: INDEX; Schema: rag; Owner: postgres
+--
+
+CREATE INDEX idx_history_actions_query ON rag.history_actions USING gin (to_tsvector('french'::regconfig, user_query));
+
+
+--
+-- Name: history_actions trg_after_insert_action; Type: TRIGGER; Schema: rag; Owner: postgres
+--
+
+CREATE TRIGGER trg_after_insert_action AFTER INSERT ON rag.history_actions FOR EACH ROW EXECUTE FUNCTION rag.fn_auto_migrate_to_fiche();
+
+
+--
 -- Name: documents trg_documents_updated_at; Type: TRIGGER; Schema: rag; Owner: rag
 --
 
@@ -1715,5 +2035,5 @@ GRANT ALL ON SEQUENCE tools.pg_tools_id_seq TO rag;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict jB0cQv1ZAfnXcU7UW0fgFUfTrbxscLJPM66Ip8DFknHhXlB66imupXeay1JENh9
+\unrestrict FeauVefp5SMMBYEGgbQkeRMQttyUpvGRppeVDeyomjgNikRfJ3CINFqYRUPQTqr
 
