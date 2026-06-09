@@ -36,5 +36,22 @@
       "-sh",
       "/var/lib/postgresql/18/data"
     ]
+  },
+  "give me the size of 'data_directory' in mb?": {
+    "type": "system",
+    "command": "du",
+    "arguments": [
+      "-sh",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "give me the value of shared_buffers": {
+    "type": "sql",
+    "query": "SHOW shared_buffers;"
+  },
+  "change the value of shared_buffers to 500mb": {
+    "type": "config",
+    "target": "/var/lib/postgresql/18/data/postgresql.conf",
+    "line_to_add": "shared_buffers = 500MB"
   }
 }

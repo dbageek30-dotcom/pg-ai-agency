@@ -120,6 +120,7 @@ Expected JSON schema if it is a regular SQL query (SELECT, SHOW, ALTER SYSTEM, e
 }}
 
 Expected JSON schema if it is a physical parameter configuration change (shared_buffers, max_connections, etc.):
+CRITICAL: The "target" field MUST be EXACTLY the string "postgresql.conf" or "pg_hba.conf". DO NOT put absolute paths here.
 {{
     "type": "config",
     "target": "postgresql.conf",
