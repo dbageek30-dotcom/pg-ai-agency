@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# SCRIPT D'INSTALLATION AUTOMATIQUE DU SERVICE PGAGENT (VERSION SÉCURISÉE & LOGS)
+# SCRIPT D'INSTALLATION AUTOMATIQUE DU SERVICE PGAGENT (TRIPARTIE & FASTAPI)
 # ==============================================================================
 
 set -e # Arrête le script en cas d'erreur
@@ -16,7 +16,6 @@ failure_handler() {
   echo "================================================================="
   exit "${exit_code}"
 }
-# Déclenche la fonction failure_handler en lui passant le numéro de ligne ($LINENO)
 trap 'failure_handler $LINENO' ERR
 
 # Configuration des variables locales
@@ -24,7 +23,7 @@ TARGET_DIR="/opt/pgagent"
 LOG_DIR="/var/log/pgagent"
 DB_USER="pgagent"
 DB_PASS="ChAnGeMe_PlEaSe_DeV_2026"  
-SECRET_TOKEN="TOKEN_GENERE_A_LA_VOLEE_S1Cr1t" 
+SECRET_TOKEN="123" # Ton Token d'authentification validé
 
 echo "================================================================="
 echo "🐘 Installation et configuration du service pgagent"
@@ -38,13 +37,8 @@ fi
 
 # 2. Détection dynamique de l'environnement PostgreSQL local
 echo "🔍 Détection de la configuration PostgreSQL..."
-if ! command -v pg_config &> /dev/null; then
-  echo "❌ PostgreSQL ne semble pas installé (pg_config introuvable)."
-  exit 1
-fi
-
 PG_DATA=$(sudo -u postgres psql -t -A -c "SHOW data_directory;")
-PG_HBA="${PG_DATA}/pg_hba.conf"
+PG_HBA=$(sudo -u postgres psql -t -A -c "SHOW hba_file;")
 
 echo "   -> Dossier Data détecté : ${PG_DATA}"
 echo "   -> Fichier pg_hba.conf trouvé : ${PG_HBA}"
@@ -52,33 +46,27 @@ echo "   -> Fichier pg_hba.conf trouvé : ${PG_HBA}"
 # 3. Création de l'arborescence /opt/pgagent et des LOGS
 echo "📁 Création des répertoires système..."
 mkdir -p "${TARGET_DIR}/bin"
-mkdir -p "${TARGET_DIR}/config"
 mkdir -p "${LOG_DIR}"
 
-# 4. Copie des fichiers applicatifs
+# 4. Copie des fichiers applicatifs depuis le dossier courant
 echo "🚀 Déploiement du code source..."
 cp server.py "${TARGET_DIR}/bin/"
+cp discovery.py "${TARGET_DIR}/bin/"
 
-# 5. Génération dynamique du fichier config.json
-echo "⚙️ Génération du fichier de configuration sécurisé..."
-cat <<EOF > "${TARGET_DIR}/config/config.json"
-{
-  "secret_token": "${SECRET_TOKEN}",
-  "db_dsn": "dbname=postgres user=${DB_USER} password=${DB_PASS} host=localhost port=5432"
-}
-EOF
-
-# Configuration stricte des droits
-chmod 600 "${TARGET_DIR}/config/config.json"
+# Droits initiaux sur les fichiers
 chown -R postgres:postgres "${TARGET_DIR}"
 chown -R postgres:postgres "${LOG_DIR}"
 chmod 750 "${LOG_DIR}"
 
-# 6. Initialisation de l'environnement virtuel Python
+# 5. Initialisation de l'environnement virtuel Python & Dépendances FastAPI
 echo "🐍 Configuration de l'environnement virtuel Python..."
 python3 -m venv "${TARGET_DIR}/.venv"
 "${TARGET_DIR}/.venv/bin/pip" install --upgrade pip
-"${TARGET_DIR}/.venv/bin/pip" install flask psycopg2-binary
+"${TARGET_DIR}/.venv/bin/pip" install fastapi uvicorn psycopg2-binary
+
+# 6. Exécution du premier scan de découverte (génère discovery.json)
+echo "🔍 Exécution du scan initial de découverte du système..."
+sudo -u postgres "${TARGET_DIR}/.venv/bin/python" "${TARGET_DIR}/bin/discovery.py"
 
 # 7. Création de l'utilisateur PostgreSQL 'pgagent' (Niveau 1 : Monitoring)
 echo "🐘 Configuration de l'utilisateur PostgreSQL '${DB_USER}'..."
@@ -98,7 +86,19 @@ else
   sudo -u postgres psql -c "SELECT pg_reload_conf();"
 fi
 
-# 9. Création et activation du service Systemd avec redirection des LOGS
+# 9. Configuration des privilèges Sudoers pour l'administration totale
+echo "🔑 Injection des règles Sudoers pour l'utilisateur postgres..."
+# On récupère dynamiquement les chemins découverts pour éviter les erreurs de distribution Linux
+TEE_PATH=$(sudo -u postgres "${TARGET_DIR}/.venv/bin/python" -c "import json; print(json.load(open('${TARGET_DIR}/bin/discovery.json'))['system_binaries']['tee'])")
+SED_PATH=$(sudo -u postgres "${TARGET_DIR}/.venv/bin/python" -c "import json; print(json.load(open('${TARGET_DIR}/bin/discovery.json'))['system_binaries']['sed'])")
+PG_CTL_PATH=$(sudo -u postgres "${TARGET_DIR}/.venv/bin/python" -c "import json; print(json.load(open('${TARGET_DIR}/bin/discovery.json'))['postgresql_binaries']['pg_ctl'])")
+
+cat <<EOF > /etc/sudoers.d/pgagent
+postgres ALL=(ALL) NOPASSWD: ${TEE_PATH}, ${SED_PATH}, ${PG_CTL_PATH}
+EOF
+chmod 440 /etc/sudoers.d/pgagent
+
+# 10. Création et activation du service Systemd avec injection d'environnement
 echo "🛠️ Configuration du service système systemd (pgagent)..."
 cat <<EOF > /etc/systemd/system/pgagent.service
 [Unit]
@@ -109,7 +109,12 @@ After=network.target postgresql.service
 Type=simple
 User=postgres
 WorkingDirectory=${TARGET_DIR}
-ExecStart=${TARGET_DIR}/.venv/bin/python ${TARGET_DIR}/bin/server.py
+Environment="REMOTE_AGENT_TOKEN=${SECRET_TOKEN}"
+Environment="PG_DB=postgres"
+Environment="PG_USER=${DB_USER}"
+Environment="PG_PASS=${DB_PASS}"
+Environment="PG_HOST=localhost"
+ExecStart=${TARGET_DIR}/.venv/bin/python -m uvicorn bin.server:app --host 127.0.0.1 --port 8432
 Restart=always
 RestartSec=5
 StandardOutput=append:${LOG_DIR}/pgagent.log
@@ -125,21 +130,21 @@ systemctl daemon-reload
 systemctl enable pgagent
 systemctl restart pgagent
 
-# 10. Vérification finale du statut en fin de script
+# 11. Vérification finale du statut en fin de script
 echo -e "\n================================================================="
 echo "🟢 VÉRIFICATION DU STATUT DU SERVICE :"
 echo "================================================================="
-sleep 1.5 # Petit délai pour laisser à Flask le temps de bind le port
+sleep 2 # Temps d'initialisation de uvicorn
 
 if systemctl is-active --quiet pgagent; then
   echo -e "Statut : RUNNING 🟢"
   echo -e "\nDernières lignes de ton fichier de log (${LOG_DIR}/pgagent.log) :"
   echo "-----------------------------------------------------------------"
-  tail -n 5 "${LOG_DIR}/pgagent.log"
+  tail -n 10 "${LOG_DIR}/pgagent.log"
   echo "-----------------------------------------------------------------"
-  echo -e "\n✅ INSTALLATION TERMINÉE AVEC SUCCÈS !"
+  echo -e "\n✅ TOUT EST PARFAITEMENT CONFIGURÉ ET SAUVEGARDÉ !"
 else
-  echo -e "Statut : FAILED ❌ (Vérifie les logs système)"
+  echo -e "Statut : FAILED ❌ (Vérifie les logs système avec journalctl -u pgagent)"
   exit 1
 fi
 echo "================================================================="
