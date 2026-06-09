@@ -6,5 +6,19 @@
   "show me the data_directory path": {
     "type": "sql",
     "query": "SHOW data_directory;"
+  },
+  "set max_connections to 150": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "max_connections = 150"
+  },
+  "show max_connections value": {
+    "type": "sql",
+    "query": "SELECT name, setting FROM pg_settings WHERE name = 'max_connections';"
+  },
+  "set max_connections value to 150;": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "max_connections = 150"
   }
 }
