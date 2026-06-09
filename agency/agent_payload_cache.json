@@ -28,5 +28,13 @@
   "get 'port' parameter value": {
     "type": "sql",
     "query": "SELECT name, setting FROM pg_settings WHERE name = 'port';"
+  },
+  "give me the size of the data_directory folder in mb": {
+    "type": "system",
+    "command": "du",
+    "arguments": [
+      "-sh",
+      "/var/lib/postgresql/18/data"
+    ]
   }
 }
