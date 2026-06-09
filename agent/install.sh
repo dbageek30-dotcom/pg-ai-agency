@@ -48,10 +48,11 @@ echo "📁 Création des répertoires système..."
 mkdir -p "${TARGET_DIR}/bin"
 mkdir -p "${LOG_DIR}"
 
-# 4. Copie des fichiers applicatifs depuis le dossier courant
+# 4. Copie des fichiers applicatifs
 echo "🚀 Déploiement du code source..."
 cp server.py "${TARGET_DIR}/bin/"
 cp discovery.py "${TARGET_DIR}/bin/"
+cp allowed_tools.json "${TARGET_DIR}/bin/"  # <-- AJOUTE CETTE LIGNE
 
 # Droits initiaux sur les fichiers
 chown -R postgres:postgres "${TARGET_DIR}"

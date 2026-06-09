@@ -1,24 +1,24 @@
 {
-  "last_scan": "2026-06-09T18:48:13.218917",
+  "last_scan": "2026-06-09T18:56:09.695718",
   "postgresql_topology": {
     "PGDATA": "/var/lib/postgresql/18/data",
     "postgresql.conf": "/var/lib/postgresql/18/data/postgresql.conf",
     "pg_hba.conf": "/var/lib/postgresql/18/data/pg_hba.conf"
   },
   "postgresql_binaries": {
-    "psql": "/usr/lib/postgresql/17/bin/psql",
     "pg_dump": "/usr/lib/postgresql/17/bin/pg_dump",
-    "pg_ctl": "/usr/lib/postgresql/18/bin/pg_ctl",
-    "initdb": "/usr/lib/postgresql/18/bin/initdb"
+    "psql": "/usr/lib/postgresql/17/bin/psql",
+    "initdb": "/usr/lib/postgresql/18/bin/initdb",
+    "pg_ctl": "/usr/lib/postgresql/18/bin/pg_ctl"
   },
   "system_binaries": {
-    "vi": "/usr/bin/vi",
-    "lscpu": "/usr/bin/lscpu",
+    "du": "/usr/bin/du",
     "free": "/usr/bin/free",
-    "ps": "/usr/bin/ps",
-    "df": "/usr/bin/df",
-    "cat": "/usr/bin/cat",
     "sed": "/usr/bin/sed",
-    "du": "/usr/bin/du"
+    "cat": "/usr/bin/cat",
+    "vi": "/usr/bin/vi",
+    "df": "/usr/bin/df",
+    "ps": "/usr/bin/ps",
+    "lscpu": "/usr/bin/lscpu"
   }
 }

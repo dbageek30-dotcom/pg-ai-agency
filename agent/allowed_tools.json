@@ -1,0 +1,18 @@
+{
+  "postgresql_tools": [
+    "psql",
+    "pg_ctl",
+    "pg_dump",
+    "initdb"
+  ],
+  "system_tools": [
+    "vi",
+    "cat",
+    "sed",
+    "du",
+    "df",
+    "free",
+    "lscpu",
+    "ps"
+  ]
+}
