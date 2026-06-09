@@ -1,17 +1,24 @@
 {
-  "last_scan": "2026-06-09T18:32:06.614886",
-  "binaries": {
-    "pg_dump": "/usr/lib/postgresql/10/bin/pg_dump",
-    "pg_restore": "/usr/lib/postgresql/10/bin/pg_restore",
-    "psql": "/usr/lib/postgresql/10/bin/psql",
-    "pg_ctl": "/usr/lib/postgresql/15/bin/pg_ctl",
-    "tail": "/usr/bin/tail",
-    "cat": "/usr/bin/cat",
-    "ls": "/usr/bin/ls",
-    "sed": "/usr/bin/sed",
-    "grep": "/usr/bin/grep"
+  "last_scan": "2026-06-09T18:48:13.218917",
+  "postgresql_topology": {
+    "PGDATA": "/var/lib/postgresql/18/data",
+    "postgresql.conf": "/var/lib/postgresql/18/data/postgresql.conf",
+    "pg_hba.conf": "/var/lib/postgresql/18/data/pg_hba.conf"
   },
-  "capabilities": {
-    "os_info": "Linux"
+  "postgresql_binaries": {
+    "psql": "/usr/lib/postgresql/17/bin/psql",
+    "pg_dump": "/usr/lib/postgresql/17/bin/pg_dump",
+    "pg_ctl": "/usr/lib/postgresql/18/bin/pg_ctl",
+    "initdb": "/usr/lib/postgresql/18/bin/initdb"
+  },
+  "system_binaries": {
+    "vi": "/usr/bin/vi",
+    "lscpu": "/usr/bin/lscpu",
+    "free": "/usr/bin/free",
+    "ps": "/usr/bin/ps",
+    "df": "/usr/bin/df",
+    "cat": "/usr/bin/cat",
+    "sed": "/usr/bin/sed",
+    "du": "/usr/bin/du"
   }
 }

@@ -1,13 +1,14 @@
 import os
+import json
 import subprocess
 from fastapi import FastAPI, HTTPException, Header, Depends
 from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-app = FastAPI(title="PostgreSQL AI Remote Agent API", version="1.8.1")
+app = FastAPI(title="PostgreSQL AI Remote Agent API", version="1.8.2")
 
-# --- 1. CHARGEMENT DES VARIABLES D'ENVIRONNEMENT (INJECTÉES PAR SYSTEMD) ---
+# --- 1. CHARGEMENT CONFIGURATION & DISCOVERY TRipartie ---
 EXPECTED_TOKEN = os.getenv("REMOTE_AGENT_TOKEN", "TOKEN_GENERE_A_LA_VOLEE_S1Cr1t")
 
 PG_DB = os.getenv("PG_DB", "postgres")
@@ -15,9 +16,28 @@ PG_USER = os.getenv("PG_USER", "pgagent")
 PG_PASS = os.getenv("PG_PASS")
 PG_HOST = os.getenv("PG_HOST", "localhost")
 
-# Chemins physiques découverts par le script d'installation
-PG_CONF_PATH = os.getenv("PG_CONF_PATH", "/etc/postgresql/18/main/postgresql.conf")
-PG_HBA_PATH = os.getenv("PG_HBA_PATH", "/etc/postgresql/18/main/pg_hba.conf")
+# Chargement dynamique depuis le fichier discovery.json
+BASE_DIR = "/opt/pgagent/bin"
+DISCOVERY_PATH = os.path.join(BASE_DIR, "discovery.json")
+
+# Fallbacks par défaut si le fichier json n'existe pas encore
+PG_CONF_PATH = "/var/lib/postgresql/18/data/postgresql.conf"
+PG_HBA_PATH = "/var/lib/postgresql/18/data/pg_hba.conf"
+PG_CTL_BIN = "/usr/bin/pg_ctl"
+TEE_BIN = "/usr/bin/tee"
+
+if os.path.exists(DISCOVERY_PATH):
+    try:
+        with open(DISCOVERY_PATH, "r") as f:
+            disco = json.load(f)
+            # 1. Topologie des fichiers
+            PG_CONF_PATH = disco.get("postgresql_topology", {}).get("postgresql.conf", PG_CONF_PATH)
+            PG_HBA_PATH = disco.get("postgresql_topology", {}).get("pg_hba.conf", PG_HBA_PATH)
+            # 2. Binaires Postgres & Système
+            PG_CTL_BIN = disco.get("postgresql_binaries", {}).get("pg_ctl", PG_CTL_BIN)
+            TEE_BIN = disco.get("system_binaries", {}).get("tee", TEE_BIN)
+    except Exception:
+        pass # Reste sur les fallbacks en cas de corruption de lecture
 
 # --- 2. MODÈLES DE DONNÉES PYDANTIC ---
 class SQLPayload(BaseModel):
@@ -40,7 +60,7 @@ def verify_token(authorization: str = Header(None)):
 
 @app.get("/health")
 def health_check():
-    """Vérification de l'état de l'agent et exposition des capacités"""
+    """Vérification de l'état de l'agent et exposition des capacités réelles au LLM"""
     return {
         "status": "online",
         "agent": "postgresql-remote-agent",
@@ -48,6 +68,10 @@ def health_check():
         "configured_paths": {
             "postgresql.conf": PG_CONF_PATH,
             "pg_hba.conf": PG_HBA_PATH
+        },
+        "resolved_binaries": {
+            "pg_ctl": PG_CTL_BIN,
+            "tee": TEE_BIN
         }
     }
 
@@ -56,79 +80,53 @@ async def execute_sql(payload: SQLPayload):
     """Exécute une vraie requête SQL sur le cluster local via l'utilisateur dédié"""
     conn = None
     try:
-        # Connexion avec les identifiants de l'utilisateur pgagent
         conn = psycopg2.connect(
-            dbname=PG_DB,
-            user=PG_USER,
-            password=PG_PASS,
-            host=PG_HOST,
+            dbname=PG_DB, user=PG_USER, password=PG_PASS, host=PG_HOST,
             cursor_factory=RealDictCursor
         )
         conn.autocommit = True
-        
         with conn.cursor() as cur:
             cur.execute(payload.query)
-            
-            # Si la requête retourne des données (SELECT, SHOW, EXPLAIN...)
             if cur.description:
                 rows = cur.fetchall()
-                return {
-                    "status": "success",
-                    "message": "Requête exécutée avec succès",
-                    "data": rows
-                }
+                return {"status": "success", "message": "Requête exécutée avec succès", "data": rows}
             else:
-                return {
-                    "status": "success",
-                    "message": "Commande exécutée avec succès (aucune ligne retournée)",
-                    "data": []
-                }
+                return {"status": "success", "message": "Commande exécutée avec succès", "data": []}
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Erreur d'exécution PostgreSQL : {str(e)}",
-            "data": []
-        }
+        return {"status": "error", "message": f"Erreur d'exécution PostgreSQL : {str(e)}", "data": []}
     finally:
-        if conn:
-            conn.close()
+        if conn: conn.close()
 
 @app.post("/api/v1/execute/config", dependencies=[Depends(verify_token)])
 async def modify_config(payload: ConfigPayload):
-    """Modifie de manière sécurisée les fichiers de configuration via la règle Sudoers"""
-    
-    # Résolution du fichier cible basé sur la découverte de l'installateur
+    """Modifie les fichiers de configuration via le binaire tee découvert"""
     if payload.target == "postgresql.conf":
         target_file = PG_CONF_PATH
     elif payload.target == "pg_hba.conf":
         target_file = PG_HBA_PATH
     else:
-        raise HTTPException(status_code=400, detail="Cible de configuration invalide (postgresql.conf ou pg_hba.conf uniquement)")
+        raise HTTPException(status_code=400, detail="Cible invalide (postgresql.conf ou pg_hba.conf)")
 
     if not target_file or not os.path.exists(target_file):
         return {
             "status": "error",
-            "message": f"Le chemin du fichier cible '{payload.target}' n'est pas configuré ou introuvable sur le système.",
+            "message": f"Le fichier cible '{payload.target}' n'est pas configuré ou introuvable.",
             "output": ""
         }
 
     try:
-        # Exécution chirurgicale via Sudo + Tee sans casser le mode du répertoire PGDATA
-        cmd = ["sudo", "/usr/bin/tee", "-a", target_file]
+        # Utilisation du binaire tee dynamiquement découvert (Debian vs RHEL)
+        cmd = ["sudo", TEE_BIN, "-a", target_file]
         process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         stdout, stderr = process.communicate(input=payload.line_to_add + "\n")
         
         if process.returncode != 0:
-            return {
-                "status": "error",
-                "message": f"Échec de l'écriture via Sudo tee : {stderr.strip()}",
-                "output": ""
-            }
+            return {"status": "error", "message": f"Échec de l'écriture via Sudo tee : {stderr.strip()}", "output": ""}
 
         # --- RECHARGEMENT DE LA CONFIGURATION (RELOAD) ---
         reload_success = False
         
-        # Tentative 1 : Rechargement via SQL natif (Si le rôle pgagent possède l'attribut pg_signal_backend)
+        # Tentative 1 : Rechargement via SQL natif
         try:
             conn = psycopg2.connect(dbname=PG_DB, user=PG_USER, password=PG_PASS, host=PG_HOST)
             conn.autocommit = True
@@ -137,21 +135,19 @@ async def modify_config(payload: ConfigPayload):
                 reload_success = True
             conn.close()
         except Exception:
-            pass  # Si échec, on bascule automatiquement sur la méthode système
+            pass
 
-        # Tentative 2 : Repli via commande système pg_ctl whitelisto-sudoers
+        # Tentative 2 : Repli via le vrai binaire pg_ctl découvert (Debian vs RHEL)
         if not reload_success:
             try:
                 subprocess.run(
-                    ["sudo", "-u", "postgres", "/usr/bin/pg_ctl", "reload"], 
-                    stdout=subprocess.DEVNULL, 
-                    stderr=subprocess.DEVNULL,
-                    timeout=5
+                    ["sudo", "-u", "postgres", PG_CTL_BIN, "reload"], 
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
                 )
             except Exception:
                 return {
                     "status": "success",
-                    "message": f"Ligne ajoutée dans {payload.target}, mais le signal de rechargement (reload) a expiré ou a échoué.",
+                    "message": f"Ligne ajoutée dans {payload.target}, mais le reload a échoué ou expiré.",
                     "output": payload.line_to_add
                 }
 
@@ -162,8 +158,4 @@ async def modify_config(payload: ConfigPayload):
         }
 
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Erreur système lors de la modification de la configuration : {str(e)}",
-            "output": ""
-        }
+        return {"status": "error", "message": f"Erreur système : {str(e)}", "output": ""}
