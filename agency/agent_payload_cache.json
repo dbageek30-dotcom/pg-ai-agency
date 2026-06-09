@@ -20,5 +20,9 @@
     "type": "config",
     "target": "postgresql.conf",
     "line_to_add": "max_connections = 150"
+  },
+  "get port value": {
+    "type": "sql",
+    "query": "SELECT name, setting FROM pg_settings WHERE name = 'port';"
   }
 }

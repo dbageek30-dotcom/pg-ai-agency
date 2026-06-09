@@ -128,7 +128,7 @@ Environment="PG_DB=postgres"
 Environment="PG_USER=${DB_USER}"
 Environment="PG_PASS=${DB_PASS}"
 Environment="PG_HOST=localhost"
-ExecStart=${TARGET_DIR}/.venv/bin/python -m uvicorn bin.server:app --host 127.0.0.1 --port 8432
+ExecStart=${TARGET_DIR}/.venv/bin/python -m uvicorn bin.server:app --host 0.0.0.0 --port 8432
 Restart=always
 RestartSec=5
 StandardOutput=append:${LOG_DIR}/pgagent.log
