@@ -24,5 +24,9 @@
   "get port value": {
     "type": "sql",
     "query": "SELECT name, setting FROM pg_settings WHERE name = 'port';"
+  },
+  "get 'port' parameter value": {
+    "type": "sql",
+    "query": "SELECT name, setting FROM pg_settings WHERE name = 'port';"
   }
 }
