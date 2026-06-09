@@ -89,11 +89,24 @@ fi
 
 # 9. Configuration des privilèges Sudoers pour l'administration totale
 echo "🔑 Injection des règles Sudoers pour l'utilisateur postgres..."
-# On récupère dynamiquement les chemins découverts pour éviter les erreurs de distribution Linux
-TEE_PATH=$(sudo -u postgres "${TARGET_DIR}/.venv/bin/python" -c "import json; print(json.load(open('${TARGET_DIR}/bin/discovery.json'))['system_binaries']['tee'])")
-SED_PATH=$(sudo -u postgres "${TARGET_DIR}/.venv/bin/python" -c "import json; print(json.load(open('${TARGET_DIR}/bin/discovery.json'))['system_binaries']['sed'])")
-PG_CTL_PATH=$(sudo -u postgres "${TARGET_DIR}/.venv/bin/python" -c "import json; print(json.load(open('${TARGET_DIR}/bin/discovery.json'))['postgresql_binaries']['pg_ctl'])")
 
+# Extraction robuste des chemins absolus directement depuis le discovery.json généré
+DISCO_FILE="${TARGET_DIR}/bin/discovery.json"
+
+TEE_PATH=$(grep -o '"tee": "[^"]*"' "$DISCO_FILE" | cut -d'"' -f4)
+SED_PATH=$(grep -o '"sed": "[^"]*"' "$DISCO_FILE" | cut -d'"' -f4)
+PG_CTL_PATH=$(grep -o '"pg_ctl": "[^"]*"' "$DISCO_FILE" | cut -d'"' -f4)
+
+# Sécurité : Si un chemin n'est pas trouvé, on applique un fallback standard
+[ -z "$TEE_PATH" ] && TEE_PATH="/usr/bin/tee"
+[ -z "$SED_PATH" ] && SED_PATH="/usr/bin/sed"
+[ -z "$PG_CTL_PATH" ] && PG_CTL_PATH="/usr/bin/pg_ctl"
+
+echo "   -> Autorisation Sudo pour tee    : ${TEE_PATH}"
+echo "   -> Autorisation Sudo pour sed    : ${SED_PATH}"
+echo "   -> Autorisation Sudo pour pg_ctl : ${PG_CTL_PATH}"
+
+# Écriture propre du fichier sudoers dédié
 cat <<EOF > /etc/sudoers.d/pgagent
 postgres ALL=(ALL) NOPASSWD: ${TEE_PATH}, ${SED_PATH}, ${PG_CTL_PATH}
 EOF
