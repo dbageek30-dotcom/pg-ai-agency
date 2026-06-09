@@ -61,11 +61,22 @@ def call_pgagent(endpoint: str, payload: dict) -> dict:
     except Exception as e:
         return {"status": "error", "message": f"Échec de connexion à pgagent : {e}"}
 
+def get_agent_context() -> dict:
+    """Interroge la route /health de l'agent pour récupérer la topologie et les chemins réels"""
+    url = f"{REMOTE_AGENT_URL}/health"
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return response.json()
+    except Exception:
+        pass
+    return {}
+
 # ---------------------------------------------------------------------------
 # COUCHE EXTRACTION ET DIRECTIVES LLM
 # ---------------------------------------------------------------------------
-def parse_action_with_llm(user_question: str, rag_output: str) -> dict:
-    """Le LLM 14B extrait le code SQL ou la modification de configuration de la réponse du RAG"""
+def parse_action_with_llm(user_question: str, rag_output: str, agent_context: dict) -> dict:
+    """Le LLM 14B extrait le code SQL, la config ou la commande système de la recommandation"""
     cache_key = user_question.strip().lower()
     payload_cache = load_payload_cache()
 
@@ -75,9 +86,27 @@ def parse_action_with_llm(user_question: str, rag_output: str) -> dict:
             print("   🧠 [2/3] Extraction : ⚡ [PAYLOAD CACHE HIT] Récupération de la commande validée...")
         return payload_cache[cache_key]
 
+    # Injection dynamique du contexte de l'agent dans le prompt pour guider le LLM sur les chemins réels
+    paths_context = agent_context.get("configured_paths", {})
+    allowed_cmds = agent_context.get("whitelisted_system_commands", [])
+    
+    context_str = f"""
+--- REAL REMOTE AGENT CONTEXT ---
+PostgreSQL Configured Paths:
+- data_directory / PGDATA: "{paths_context.get('postgresql.conf', 'Unknown')}" (Note: Usually located in the parent directory of this config file)
+- postgresql.conf path: "{paths_context.get('postgresql.conf', 'Unknown')}"
+- pg_hba.conf path: "{paths_context.get('pg_hba.conf', 'Unknown')}"
+
+Strictly Allowed Base System/PostgreSQL Commands (Whitelist):
+{json.dumps(allowed_cmds)}
+---------------------------------
+"""
+
     # 2. Cache Miss : Interrogation d'Ollama
-    prompt = f"""You are a strict API translation layer. Your ONLY job is to convert a technical recommendation into a raw JSON object.
+    prompt = f"""You are a strict API translation layer. Your ONLY job is to convert a technical recommendation into a raw JSON object matching one of the schemas below.
 You are strictly FORBIDDEN to reply with prose, explanations, markdown blocks, or warnings. Return raw JSON.
+
+{context_str}
 
 Technical Recommendation to parse:
 \"\"\"
@@ -95,6 +124,15 @@ Expected JSON schema if it is a physical parameter configuration change (shared_
     "type": "config",
     "target": "postgresql.conf",
     "line_to_add": "parameter = 'value'"
+}}
+
+Expected JSON schema if it requires executing an allowed system tool or PostgreSQL utility (like du, df, free, pg_ctl, pg_dump, etc.):
+NOTE: "command" MUST be a single exact string from the allowed base commands whitelist. All options or target paths must be separate strings inside the "arguments" list.
+Example for directory size: {{"type": "system", "command": "du", "arguments": ["-sh", "/var/lib/postgresql/18/data"]}}
+{{
+    "type": "system",
+    "command": "base_command_name_only",
+    "arguments": ["arg1", "arg2"]
 }}"""
 
     ollama_host = os.getenv("OLLAMA_HOST", "http://10.198.0.4:11434")
@@ -119,8 +157,8 @@ Expected JSON schema if it is a physical parameter configuration change (shared_
             
         parsed_payload = json.loads(raw_output)
         
-        # Sauvegarde au cache si l'extraction est conforme
-        if "type" in parsed_payload and ( "query" in parsed_payload or "line_to_add" in parsed_payload ):
+        # Sauvegarde au cache si l'extraction est conforme à l'un des trois types
+        if "type" in parsed_payload and ( "query" in parsed_payload or "line_to_add" in parsed_payload or "command" in parsed_payload ):
             payload_cache[cache_key] = parsed_payload
             save_payload_cache(payload_cache)
             
@@ -136,13 +174,16 @@ Expected JSON schema if it is a physical parameter configuration change (shared_
 # ---------------------------------------------------------------------------
 def execute_action_pipeline(user_question: str):
     """MODE AGENT ACTIF : RAG -> Extraction de commande -> Exécution sur VM-PG -> Synthèse"""
+    # Récupération dynamique du contexte de l'agent distant au début du pipeline
+    agent_context = get_agent_context()
+
     print("\n📚 [1/3] RAG : Recherche de la procédure d'action...")
     rag_response = expert.ask_rag(user_question)
     
     print(f"🧠 [2/3] Extraction : Génération de la charge utile via {ORCHESTRATOR_MODEL}...")
-    action = parse_action_with_llm(user_question, rag_response)
+    action = parse_action_with_llm(user_question, rag_response, agent_context)
     
-    if action.get("type") not in ["sql", "config"]:
+    if action.get("type") not in ["sql", "config", "system"]:
         print("⚠️ [ERREUR] L'Orchestrateur n'a pas pu isoler une commande structurelle reconnue par l'agent.")
         return
 
@@ -154,7 +195,7 @@ def execute_action_pipeline(user_question: str):
             return
         execution_result = call_pgagent("sql", {"query": action["query"]})
         sent_command = action["query"]
-    else:
+    elif action["type"] == "config":
         if not action.get("target") or not action.get("line_to_add"):
             print("⚠️ [ERREUR] Paramètres de configuration incomplets.")
             return
@@ -163,6 +204,15 @@ def execute_action_pipeline(user_question: str):
             "line_to_add": action["line_to_add"]
         })
         sent_command = f"[{action['target']}] -> {action['line_to_add']}"
+    else:  # Type SYSTEM
+        if not action.get("command"):
+            print("⚠️ [ERREUR] Commande système vide.")
+            return
+        execution_result = call_pgagent("system", {
+            "command": action["command"],
+            "arguments": action.get("arguments", [])
+        })
+        sent_command = f"{action['command']} {' '.join(action.get('arguments', []))}"
 
     if VERBOSE:
         print(f"   ⚙️ [DEBUG NETWORK] Retour brut reçu du serveur : {json.dumps(execution_result, indent=2)}")
