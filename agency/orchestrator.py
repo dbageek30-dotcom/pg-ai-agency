@@ -52,8 +52,8 @@ def call_pgagent(endpoint: str, payload: dict) -> dict:
         "Content-Type": "application/json"
     }
     if VERBOSE:
-        print(f"   ⚙️ [DEBUG NETWORK] POST {url}")
-        print(f"   ⚙️ [DEBUG NETWORK] Payload: {json.dumps(payload)}")
+        print(f"    ⚙️ [DEBUG NETWORK] POST {url}")
+        print(f"    ⚙️ [DEBUG NETWORK] Payload: {json.dumps(payload)}")
         
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=15)
@@ -83,7 +83,7 @@ def parse_action_with_llm(user_question: str, rag_output: str, agent_context: di
     # 1. Tentative de récupération depuis le cache local du 14B
     if cache_key in payload_cache:
         if VERBOSE:
-            print("   🧠 [2/3] Extraction : ⚡ [PAYLOAD CACHE HIT] Récupération de la commande validée...")
+            print("    🧠 [2/3] Extraction : ⚡ [PAYLOAD CACHE HIT] Récupération de la commande validée...")
         return payload_cache[cache_key]
 
     # Injection dynamique du contexte de l'agent dans le prompt pour guider le LLM sur les chemins réels
@@ -113,6 +113,8 @@ Technical Recommendation to parse:
 {rag_output}
 \"\"\"
 
+User original intent: "{user_question}"
+
 Expected JSON schema if it is a regular SQL query (SELECT, SHOW, ALTER SYSTEM, etc.):
 {{
     "type": "sql",
@@ -139,8 +141,8 @@ Example for directory size: {{"type": "system", "command": "du", "arguments": ["
     ollama_host = os.getenv("OLLAMA_HOST", "http://10.198.0.4:11434")
 
     if VERBOSE:
-        print(f"   ⚙️ [DEBUG LLM] Connexion ciblée vers Ollama : {ollama_host}")
-        print(f"   ⚙️ [DEBUG LLM] Modèle demandé : {ORCHESTRATOR_MODEL}")
+        print(f"    ⚙️ [DEBUG LLM] Connexion ciblée vers Ollama : {ollama_host}")
+        print(f"    ⚙️ [DEBUG LLM] Modèle demandé : {ORCHESTRATOR_MODEL}")
 
     try:
         client = ollama.Client(host=ollama_host)
@@ -154,7 +156,7 @@ Example for directory size: {{"type": "system", "command": "du", "arguments": ["
         raw_output = response['message']['content'].strip()
         
         if VERBOSE:
-            print(f"   ⚙️ [DEBUG LLM] Réponse brute reçue : {raw_output}")
+            print(f"    ⚙️ [DEBUG LLM] Réponse brute reçue : {raw_output}")
             
         parsed_payload = json.loads(raw_output)
         
@@ -167,7 +169,7 @@ Example for directory size: {{"type": "system", "command": "du", "arguments": ["
 
     except Exception as e:
         if VERBOSE:
-            print(f"   ❌ [DEBUG LLM ERROR] L'appel Ollama (extraction) a échoué : {e}")
+            print(f"    ❌ [DEBUG LLM ERROR] L'appel Ollama (extraction) a échoué : {e}")
         return {"type": "none", "message": f"Erreur d'extraction : {e}"}
 
 # ---------------------------------------------------------------------------
@@ -181,6 +183,13 @@ def execute_action_pipeline(user_question: str):
     print("\n📚 [1/3] RAG : Recherche de la procédure d'action...")
     rag_response = expert.ask_rag(user_question)
     
+    # Interception du court-circuit de commande système pure
+    if rag_response == "DIRECT_SYSTEM_ACTION":
+        if VERBOSE:
+            print("⚡ [ORCHESTRATOR] RAG ignoré (action système directe). Transmission du contexte topologique au 14B.")
+        # On injecte une directive explicite au lieu d'une documentation pour aiguiller l'extraction
+        rag_response = f"Direct infrastructure execution requested by user. Translate the user query directly using the provided remote agent whitelist context."
+
     print(f"🧠 [2/3] Extraction : Génération de la charge utile via {ORCHESTRATOR_MODEL}...")
     action = parse_action_with_llm(user_question, rag_response, agent_context)
     
@@ -216,7 +225,7 @@ def execute_action_pipeline(user_question: str):
         sent_command = f"{action['command']} {' '.join(action.get('arguments', []))}"
 
     if VERBOSE:
-        print(f"   ⚙️ [DEBUG NETWORK] Retour brut reçu du serveur : {json.dumps(execution_result, indent=2)}")
+        print(f"    ⚙️ [DEBUG NETWORK] Retour brut reçu du serveur : {json.dumps(execution_result, indent=2)}")
 
     # Restitution finale (Synthèse métier rédigée)
     print("\n✍️ Syntèse du rapport d'exécution...")
@@ -323,7 +332,13 @@ if __name__ == "__main__":
             else:
                 print("\n📖 [MODE INFORMATION] Consultation de la base de connaissances...")
                 reponse = expert.ask_rag(user_input)
-                print(f"\n🤖 [EXPERT PG18] :\n{reponse}\n")
+                
+                if reponse == "DIRECT_SYSTEM_ACTION":
+                    print("\n🤖 [EXPERT PG18] :")
+                    print("💡 Cette question concerne une commande système (infrastructure).")
+                    print("Pour l'exécuter réellement sur l'environnement, utilisez le préfixe `/a` ou `/action`.\n")
+                else:
+                    print(f"\n🤖 [EXPERT PG18] :\n{reponse}\n")
                 
         except KeyboardInterrupt:
             break
