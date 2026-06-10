@@ -43,7 +43,7 @@ try:
     print("[INIT] 🐘 Initialisation du pool de connexions PostgreSQL...")
     PG_POOL = psycopg2.pool.SimpleConnectionPool(
         minconn=1,
-        maxconn=10,
+        maxconn=15,
         dbname=DB_NAME,
         user=DB_USER,
         password=DB_PASS,
