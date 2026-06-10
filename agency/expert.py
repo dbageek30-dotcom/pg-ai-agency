@@ -351,6 +351,30 @@ def load_system_prompt(prompt_filename, context_data):
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read().format(context=context_data)
 
+def save_action(user_query, action_type, payload, description=""):
+    """Enregistre une action système/SQL dans l'historique dédié avec gestion de l'unicité du payload"""
+    conn = None
+    try:
+        conn = PG_POOL.getconn()
+        cur = conn.cursor()
+        
+        # ON CONFLICT permet de ne pas planter si le même payload est exécuté plusieurs fois
+        query = """
+            INSERT INTO rag.history_actions (user_query, action_type, payload, description) 
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (payload) 
+            DO UPDATE SET updated_at = CURRENT_TIMESTAMP, user_query = EXCLUDED.user_query;
+        """
+        cur.execute(query, (user_query, action_type, payload, description))
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        if VERBOSE:
+            print(f"⚠️ Erreur lors de l'enregistrement de l'action : {e}")
+    finally:
+        if conn:
+            PG_POOL.putconn(conn)
+
 def ask_rag(question):
     global CURRENT_CONTEXT
     

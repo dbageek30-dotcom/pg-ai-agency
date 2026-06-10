@@ -235,14 +235,29 @@ Server Result: {json.dumps(execution_result)}
 
 Provide a concise, professional summary of the results returned by the server to the user. State clearly if the execution was a success or failure."""
 
+       # ... (Code existant de la génération du rapport final dans orchestrator.py) ...
     try:
         ollama_host = os.getenv("OLLAMA_HOST", "http://10.198.0.4:11434")
         client = ollama.Client(host=ollama_host)
         
         response = client.chat(model=ORCHESTRATOR_MODEL, messages=[{"role": "user", "content": final_prompt}])
-        print(f"\n🎯 [RAPPORT ACTION] :\n{response['message']['content'].strip()}\n")
+        rapport_final = response['message']['content'].strip()
+        print(f"\n🎯 [RAPPORT ACTION] :\n{rapport_final}\n")
+        
+        # 🟢 CORRECTION OPTION 1 : On enregistre proprement dans history_actions via expert
+        # action["type"] vaut "system", "sql" ou "config"
+        raw_payload_json = json.dumps(action, ensure_ascii=False)
+        
+        expert.save_action(
+            user_query=user_question,
+            action_type=action["type"],
+            payload=raw_payload_json,
+            description=rapport_final  # On met le résumé DBA en guise de description
+        )
+
     except Exception as e:
-        print(f"❌ Erreur lors de la génération du rapport final : {e}")
+        print(f"❌ Erreur lors de la génération du rapport final ou de l'historisation : {e}")
+
 
 # ---------------------------------------------------------------------------
 # SCRIPT ENTRYPOINT
@@ -290,16 +305,34 @@ if __name__ == "__main__":
                     print("🧠 [SYSTEM] Session réinitialisée. (Le cache sémantique Postgres reste actif !)\n")
                     
                 elif cmd in ['/history', '/h']:
-                    history = expert.get_recent_history(limit=10)
+                    history = expert.get_recent_history(limit=5)
+                    print("\n📜 --- SOUVENIRS DU MODE CONVERSATION (chat_history) ---")
                     if not history:
-                        print("📜 [HISTORY] Aucun message dans la session actuelle.\n")
+                        print("Aucun message textuel.")
                     else:
-                        print("\n📜 --- HISTORIQUE DE LA SESSION ---")
                         for msg in history:
                             prefix = "👤 [VOUS]" if msg['role'] == 'user' else "🤖 [EXPERT]"
                             print(f"{prefix} : {msg['content']}")
-                        print("-----------------------------------\n")
-                        
+
+                    # 🟢 AJOUT : Récupération en direct des dernières actions de la table history_actions
+                    print("\n⚡ --- DERNIÈRES ACTIONS EXÉCUTÉES (history_actions) ---")
+                    try:
+                        conn = expert.PG_POOL.getconn()
+                        cur = conn.cursor()
+                        cur.execute("SELECT action_type, user_query, created_at FROM rag.history_actions ORDER BY id DESC LIMIT 5;")
+                        actions = cur.fetchall()
+                        cur.close()
+                        expert.PG_POOL.putconn(conn)
+
+                        if not actions:
+                            print("Aucune action physique enregistrée.")
+                        else:
+                            for act in actions:
+                                print(f"⏱️ [{act[2].strftime('%H:%M:%S')}] [{act[0].upper()}] -> Requête : {act[1]}")
+                    except Exception as e:
+                        print(f"Impossible de charger l'historique des actions : {e}")
+                    print("-----------------------------------\n")
+
                 elif cmd in ['/delete', '/d']:
                     if len(parts) < 2:
                         print("❌ [ERREUR] Syntaxe incorrecte. Utilisation : /d [ID_DU_CACHE]\n")
