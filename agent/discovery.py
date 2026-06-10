@@ -11,7 +11,7 @@ from datetime import datetime
 POSTGRES_TOOLS = {"psql", "pg_ctl", "pg_dump", "initdb"}
 
 # Outils système pour l'analyse des ressources, de l'espace disque et l'édition
-SYSTEM_TOOLS = {"vi", "cat", "sed", "du", "df", "free", "lscpu", "ps"}
+SYSTEM_TOOLS = {"vi", "cat", "sed", "du", "df", "free", "lscpu", "ps", "mkdir"}
 
 
 def get_pg_topology():
