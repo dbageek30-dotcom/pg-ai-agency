@@ -114,33 +114,29 @@ async def execute_sql(payload: SQLPayload):
     finally:
         if conn: conn.close()
 
+# Remplacer la logique d'écriture aveugle par une validation de clé/valeur stricte
 @app.post("/api/v1/execute/config", dependencies=[Depends(verify_token)])
 async def modify_config(payload: ConfigPayload):
-    """Modifie les fichiers de configuration via le binaire tee découvert"""
     if payload.target == "postgresql.conf":
         target_file = PG_CONF_PATH
     elif payload.target == "pg_hba.conf":
         target_file = PG_HBA_PATH
     else:
-        raise HTTPException(status_code=400, detail="Cible invalide (postgresql.conf ou pg_hba.conf)")
+        raise HTTPException(status_code=400, detail="Cible invalide")
 
-    if not target_file or not os.path.exists(target_file):
-        return {
-            "status": "error",
-            "message": f"Le fichier cible '{payload.target}' n'est pas configuré ou introuvable.",
-            "output": ""
-        }
+    # Protection : S'assurer que la ligne n'introduit pas de cassure système ou de commande cachée
+    clean_line = payload.line_to_add.strip().replace("\n", "")
+    
+    # Validation par pattern basique (ex: parametre = valeur)
+    if payload.target == "postgresql.conf" and not re.match(r"^[a-zA-Z0-9_\.]+\s*=\s*'.*'$", clean_line):
+        return {"status": "error", "message": "Format de paramètre non conforme. Sécurité activée.", "output": ""}
 
     try:
-        cmd = ["sudo", TEE_BIN, "-a", target_file]
-        process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        stdout, stderr = process.communicate(input=payload.line_to_add + "\n")
-        
-        if process.returncode != 0:
-            return {"status": "error", "message": f"Échec de l'écriture via Sudo tee : {stderr.strip()}", "output": ""}
-
-        reload_success = False
-        
+        # Écriture contrôlée directement en Python si le processus possède les droits sur le fichier
+        with open(target_file, "a", encoding="utf-8") as f:
+            f.write(f"\n# Ajouté par AI Agent le {datetime.now().isoformat()}\n")
+            f.write(clean_line + "\n")
+            
         # Tentative 1 : Rechargement via SQL natif
         try:
             conn = psycopg2.connect(dbname=PG_DB, user=PG_USER, password=PG_PASS, host=PG_HOST)

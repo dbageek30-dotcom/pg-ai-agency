@@ -238,5 +238,81 @@
     "arguments": [
       "/var/lib/postgresql/18/data"
     ]
+  },
+  "what is the wal_level value ?": {
+    "type": "sql",
+    "query": "SHOW wal_level;"
+  },
+  "it the archive_command parameter set ?": {
+    "type": "sql",
+    "query": "SHOW archive_command;"
+  },
+  "can you see a backup folder in '/var/lib/postgresql/18/backup'": {
+    "type": "system",
+    "command": "ls",
+    "arguments": [
+      "/var/lib/postgresql/18/backup"
+    ]
+  },
+  "set the archive_command parameter in directory '/var/lib/postgresql/18/backup'": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "archive_command = 'cp %p /var/lib/postgresql/18/backup/%f'"
+  },
+  "stop the database server": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "stop",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "start the database cluster": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "start",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "list all databases in the cluster": {
+    "type": "system",
+    "command": "psql",
+    "arguments": [
+      "-l"
+    ]
+  },
+  "delete the port value 5433 in the postgresql.conf file": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "# port = 5433"
+  },
+  "remove the 'port' parameter value 5433 in the postgresql.conf file": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "port = 5432"
+  },
+  "start the database server": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "start",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "on which port ?": {
+    "type": "system",
+    "command": "cat",
+    "arguments": [
+      "/var/lib/postgresql/18/data/postgresql.conf"
+    ]
+  },
+  "set parameter archive_mode to on": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "archive_mode = on"
   }
 }
