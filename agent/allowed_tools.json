@@ -13,6 +13,7 @@
     "df",
     "free",
     "lscpu",
-    "ps"
+    "ps",
+    "mkdir"
   ]
 }

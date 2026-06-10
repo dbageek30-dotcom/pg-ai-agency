@@ -98,5 +98,13 @@
       "-h",
       "/var/lib/postgresql/18/data"
     ]
+  },
+  "create a new directory 'backup' on /var/lib/postgresql/18/backup": {
+    "type": "system",
+    "command": "mkdir",
+    "arguments": [
+      "-p",
+      "/var/lib/postgresql/18/backup"
+    ]
   }
 }
