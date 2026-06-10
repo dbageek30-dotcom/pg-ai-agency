@@ -245,14 +245,20 @@ def get_table_schema(table_name):
             PG_POOL.putconn(conn)
     return ""
 
+
 # ---------------------------------------------------------------------------
-# COUCHE INTERPRÉTRATION DE LA QUESTION (QUERY REWRITER)
+# COUCHE INTERPRÉTRATION DE LA QUESTION (QUERY REWRITER & INTENT DETECTOR)
 # ---------------------------------------------------------------------------
 def analyze_and_rewrite_query(user_question):
     if VERBOSE:
         print("[INTENT] 🧠 Interprétation de la question par le LLM...")
-    prompt = f"""You are a DBA assistant. Analyze this question and extract technical keywords (like system views, function names, or parameters) and build an optimized vector search query.
-    Return a JSON object with 'keywords' (list of strings) and 'search_query' (string).
+    prompt = f"""You are a DBA assistant. Analyze this question to determine if it requires a standard documentation lookup or if it is a direct infrastructure/system action request (like checking disk space, creating directories, listing files, checking process status).
+    
+    Return a JSON object with:
+    - 'intent': string ("documentation" or "system_action")
+    - 'keywords': list of technical keywords (strings)
+    - 'search_query': string (plain descriptive English search string)
+    
     CRITICAL RULE: Do NOT write SQL queries, SELECT commands, or code in the 'search_query' field. It must be a plain descriptive English search string.
     Question: {user_question}"""
     try:
@@ -271,17 +277,16 @@ def analyze_and_rewrite_query(user_question):
                 lines = lines[:-1]
             raw_content = "\n".join(lines).strip()
         analysis = json.loads(raw_content)
-        return analysis.get("keywords", []), analysis.get("search_query", user_question)
+        return analysis.get("keywords", []), analysis.get("search_query", user_question), analysis.get("intent", "documentation")
     except Exception as e:
         if VERBOSE:
-            print(f"[INTENT] ⚠️ Échec de l'analyse, repli sur la question brute: {e}")
-        return [], user_question
+            print(f"[INTENT] ⚠️ Échec de l'analyse, repli sur le mode par défaut : {e}")
+        return [], user_question, "documentation"
+
 # ---------------------------------------------------------------------------
 # PIPELINE RAG AVEC APPRENTISSAGE D'INTENTION (HYBRID SEARCH REWRITE)
 # ---------------------------------------------------------------------------
-def fetch_new_context(query_text, top_k_postgres=15, final_limit=3):
-    keywords, optimized_search = analyze_and_rewrite_query(query_text)
-    
+def fetch_new_context(query_text, optimized_search, keywords, top_k_postgres=15, final_limit=3):
     if VERBOSE:
         print(f"[INTENT] 🎯 Mots-clés extraits : {keywords}")
         print(f"[INTENT] 🔍 Requête de recherche optimisée : '{optimized_search}'")
@@ -349,6 +354,15 @@ def load_system_prompt(prompt_filename, context_data):
 def ask_rag(question):
     global CURRENT_CONTEXT
     
+    # Extraction de l'intention en amont pour le court-circuit
+    keywords, optimized_search, intent = analyze_and_rewrite_query(question)
+    
+    # COURT-CIRCUIT APPLIQUÉ SUR LES COMMANDES INFRASTRUCTURE/SYSTÈME ⚡
+    if intent == "system_action":
+        if VERBOSE:
+            print("⚡ [INTENT] Détection d'une action système factuelle. Court-circuit complet du RAG engagé.")
+        return "DIRECT_SYSTEM_ACTION"
+
     response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=question)
     raw_embedding = response['embedding']
 
@@ -363,7 +377,7 @@ def ask_rag(question):
     if VERBOSE:
         print("🔄 [RAG] Analyse et recherche vectorielle lancées...")
     
-    optimized_embed, CURRENT_CONTEXT = fetch_new_context(question, top_k_postgres=15, final_limit=3)
+    optimized_embed, CURRENT_CONTEXT = fetch_new_context(question, optimized_search, keywords, top_k_postgres=15, final_limit=3)
 
     # ---------------------------------------------------------------------------
     # ENRICHISSEMENT DYNAMIQUE DU CATALOGUE
@@ -411,7 +425,7 @@ if __name__ == "__main__":
     clear_history()
 
     print("\n" + "="*75)
-    print("🐘 POSTGRESQL 18 INTERACTIVE DBA CONSOLE - EXPERT V3.2")
+    print("🐘 POSTGRESQL 18 INTERACTIVE DBA CONSOLE - EXPERT V3.3")
     print(f"    Mode verbeux : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}")
     print("    Moteurs : Intent Query Rewriter + Catalogue Enricher + Cache Sémantique 🔬")
     print("    Commandes :  /c (clear)  |  /h (history)  |  /d [id] (delete cache item)  |  q (quitter)")
@@ -464,7 +478,14 @@ if __name__ == "__main__":
                 continue
             
             reponse = ask_rag(ma_question)
-            print(f"\n🤖 [EXPERT PG18] :\n{reponse}\n")
+            
+            # Fallback local esthétique si la console autonome rencontre le token de court-circuit
+            if reponse == "DIRECT_SYSTEM_ACTION":
+                print("\n🤖 [EXPERT PG18] :")
+                print("💡 *[Note Console]* Cette question concerne une commande système directe.")
+                print("En mode agence autonome, l'orchestrateur traitera directement cette demande avec la VM.")
+            else:
+                print(f"\n🤖 [EXPERT PG18] :\n{reponse}\n")
             
         except KeyboardInterrupt: break
         except Exception as e: print(f"\n❌ Erreur : {e}\n")

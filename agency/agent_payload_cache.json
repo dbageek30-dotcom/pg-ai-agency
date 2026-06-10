@@ -106,5 +106,9 @@
       "-p",
       "/var/lib/postgresql/18/backup"
     ]
+  },
+  "list all files in data_directory": {
+    "type": "sql",
+    "query": "SELECT pg_ls_dir('base');"
   }
 }
