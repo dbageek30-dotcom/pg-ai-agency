@@ -89,7 +89,7 @@ def health_check():
             "pg_ctl": PG_CTL_BIN,
             "tee": TEE_BIN
         },
-        "whitelisted_system_commands": allowed_cmds if allowed_cmds else ["psql", "pg_ctl", "pg_dump", "initdb", "vi", "cat", "sed", "du", "df", "free", "lscpu", "ps"]
+        "whitelisted_system_commands": allowed_cmds if allowed_cmds else ["psql", "pg_ctl", "pg_dump", "initdb", "vi", "cat", "sed", "du", "df", "free", "lscpu", "ps", "mkdir", "echo", "tee", "ls"]
     }
 
 @app.post("/api/v1/execute/sql", dependencies=[Depends(verify_token)])
@@ -190,8 +190,8 @@ async def execute_system_command(payload: SystemPayload):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Erreur de lecture de la whitelist : {str(e)}")
     else:
-        # Fallback historique de secours
-        allowed_tools = {"psql", "pg_ctl", "pg_dump", "initdb", "vi", "cat", "sed", "du", "df", "free", "lscpu", "ps"}
+        # Fallback historique de secours mis à jour avec l'ensemble complet des outils requis
+        allowed_tools = {"psql", "pg_ctl", "pg_dump", "initdb", "vi", "cat", "sed", "du", "df", "free", "lscpu", "ps", "mkdir", "echo", "tee", "ls"}
 
     # 2. Guardrail de sécurité strict
     if payload.command not in allowed_tools:
