@@ -210,5 +210,12 @@
     "arguments": [
       "/var/lib/postgresql/18/data/postgresql.conf"
     ]
+  },
+  "list all the file in '/var/lib/postgresql/18/data2'": {
+    "type": "system",
+    "command": "ls",
+    "arguments": [
+      "/var/lib/postgresql/18/data2"
+    ]
   }
 }
