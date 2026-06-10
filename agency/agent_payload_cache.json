@@ -53,5 +53,50 @@
     "type": "config",
     "target": "/var/lib/postgresql/18/data/postgresql.conf",
     "line_to_add": "shared_buffers = 500MB"
+  },
+  "chang shared_buffers value to 500mb": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "shared_buffers = 500MB"
+  },
+  "restart the cluster": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "restart",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "set shared_buffers to 1gb": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "shared_buffers = 1GB"
+  },
+  "restart the database cluster": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "restart",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "is the database cluster started ?": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "status",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "give me the free space of the filesystem of the database cluster": {
+    "type": "system",
+    "command": "df",
+    "arguments": [
+      "-h",
+      "/var/lib/postgresql/18/data"
+    ]
   }
 }
