@@ -52,7 +52,6 @@ mkdir -p "${LOG_DIR}"
 echo "🚀 Déploiement du code source..."
 cp server.py "${TARGET_DIR}/bin/"
 cp discovery.py "${TARGET_DIR}/bin/"
-cp allowed_tools.json "${TARGET_DIR}/bin/"  # <-- AJOUTE CETTE LIGNE
 
 # Droits initiaux sur les fichiers
 chown -R postgres:postgres "${TARGET_DIR}"
