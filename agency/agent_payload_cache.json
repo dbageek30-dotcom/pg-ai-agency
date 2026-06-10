@@ -314,5 +314,35 @@
     "type": "config",
     "target": "postgresql.conf",
     "line_to_add": "archive_mode = on"
+  },
+  "are the hugepages on ?": {
+    "type": "system",
+    "command": "cat",
+    "arguments": [
+      "/proc/meminfo"
+    ]
+  },
+  "is the 'hugepages' parameter on ?": {
+    "type": "system",
+    "command": "cat",
+    "arguments": [
+      "/var/lib/postgresql/18/data/postgresql.conf"
+    ]
+  },
+  "give me the value of huge_page_size parameter": {
+    "type": "system",
+    "command": "grep",
+    "arguments": [
+      "^Hugepagesize",
+      "/proc/meminfo"
+    ]
+  },
+  "give me the value of 'huge_page_size' parameter from postgresql.conf file": {
+    "type": "system",
+    "command": "grep",
+    "arguments": [
+      "^Hugepagesize",
+      "/proc/meminfo"
+    ]
   }
 }

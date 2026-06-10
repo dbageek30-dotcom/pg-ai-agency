@@ -18,6 +18,7 @@
     "ps",
     "mkdir",
     "echo",
+    "grep",
     "tee",
     "ls"
   ]
