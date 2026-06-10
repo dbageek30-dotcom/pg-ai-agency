@@ -110,5 +110,105 @@
   "list all files in data_directory": {
     "type": "sql",
     "query": "SELECT pg_ls_dir('base');"
+  },
+  "create new directory in /var/lib/postgresql/18/data2": {
+    "type": "system",
+    "command": "mkdir",
+    "arguments": [
+      "/var/lib/postgresql/18/data2"
+    ]
+  },
+  "give me the list of all databases;": {
+    "type": "system",
+    "command": "psql",
+    "arguments": [
+      "-l"
+    ]
+  },
+  "create new databases 'mypgdb'": {
+    "type": "system",
+    "command": "psql",
+    "arguments": [
+      "-c",
+      "CREATE DATABASE mypgdb;"
+    ]
+  },
+  "create a table 'custumer' in mypgdb database, i let you decide for the column names": {
+    "type": "sql",
+    "query": "CREATE TABLE custumer (id SERIAL PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+  },
+  "in the database 'mypgdb', insert 5 rows in custumer table i let you chose all the informations to fill the rows": {
+    "type": "sql",
+    "query": "INSERT INTO custumer (name, email, age, city) VALUES ('John Doe', 'john.doe@example.com', 30, 'New York'), ('Jane Smith', 'jane.smith@example.com', 25, 'Los Angeles'), ('Alice Johnson', 'alice.johnson@example.com', 35, 'Chicago'), ('Bob Brown', 'bob.brown@example.com', 40, 'Houston'), ('Charlie Davis', 'charlie.davis@example.com', 28, 'Phoenix');"
+  },
+  "get shared_buffers value": {
+    "type": "sql",
+    "query": "SHOW shared_buffers;"
+  },
+  "in the /var/lib/postgresql/18/data2, initialize a new database cluster": {
+    "type": "system",
+    "command": "initdb",
+    "arguments": [
+      "-D",
+      "/var/lib/postgresql/18/data2"
+    ]
+  },
+  "in '/var/lib/postgresql/18/data2' set the port to '5433'": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "port = '5433'"
+  },
+  "in '/var/lib/postgresql/18/data2' set shared_buffers to 512mb": {
+    "type": "config",
+    "target": "postgresql.conf",
+    "line_to_add": "shared_buffers = '512MB'"
+  },
+  "restart the database cluster '/var/lib/postgresql/18/data2'": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "restart",
+      "-D",
+      "/var/lib/postgresql/18/data2"
+    ]
+  },
+  "start the database cluster '/var/lib/postgresql/18/data2'": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "start",
+      "-D",
+      "/var/lib/postgresql/18/data2"
+    ]
+  },
+  "check in the postgresql.conf file in '/var/lib/postgresql/18/data2' the port value": {
+    "type": "system",
+    "command": "cat",
+    "arguments": [
+      "/var/lib/postgresql/18/data2/postgresql.conf"
+    ]
+  },
+  "create a new 'diff.conf' file in '/var/lib/postgresql/18/data2' database cluster and add port value to 5433": {
+    "type": "system",
+    "command": "mkdir",
+    "arguments": [
+      "/var/lib/postgresql/18/data2"
+    ]
+  },
+  "use tee commamnd to add port parameter in '/var/lib/postgresql/18/data2/postgresql.conf' file with value 5433": {
+    "type": "system",
+    "command": "tee",
+    "arguments": [
+      "/var/lib/postgresql/18/data/postgresql.conf",
+      "-a"
+    ],
+    "input": "port = 5433"
+  },
+  "use cat commamnd to add port parameter in '/var/lib/postgresql/18/data2/postgresql.conf' file with value 5433": {
+    "type": "system",
+    "command": "cat",
+    "arguments": [
+      "/var/lib/postgresql/18/data/postgresql.conf"
+    ]
   }
 }
