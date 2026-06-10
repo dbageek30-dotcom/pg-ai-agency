@@ -5,13 +5,24 @@ import subprocess
 from datetime import datetime
 
 # ==============================================================================
-# WHITELISTS STRICTES DES OUTILS AUTORISÉS POUR LE LLM 14B
+# CONFIGURATION CENTRALISÉE ET WHITELISTS DYNAMIQUES
 # ==============================================================================
-# Outils natifs PostgreSQL pour l'administration et la maintenance de la base
-POSTGRES_TOOLS = {"psql", "pg_ctl", "pg_dump", "initdb"}
+ALLOWED_TOOLS_PATH = "/opt/pgagent/bin/allowed_tools.json"
 
-# Outils système pour l'analyse des ressources, de l'espace disque et l'édition
+# Fallbacks historiques par défaut si le fichier JSON centralisé est manquant
+POSTGRES_TOOLS = {"psql", "pg_ctl", "pg_dump", "initdb"}
 SYSTEM_TOOLS = {"vi", "cat", "sed", "du", "df", "free", "lscpu", "ps", "mkdir", "echo", "tee", "ls"}
+
+# Chargement à la volée de la whitelist centralisée
+if os.path.exists(ALLOWED_TOOLS_PATH):
+    try:
+        with open(ALLOWED_TOOLS_PATH, "r") as f:
+            data = json.load(f)
+            # Utilisation de set() pour optimiser la vitesse de recherche des binaires
+            POSTGRES_TOOLS = set(data.get("postgresql_tools", POSTGRES_TOOLS))
+            SYSTEM_TOOLS = set(data.get("system_tools", SYSTEM_TOOLS))
+    except Exception as e:
+        print(f"⚠️ Impossible de lire la whitelist centrale, utilisation du fallback : {e}")
 
 
 def get_pg_topology():

@@ -217,5 +217,19 @@
     "arguments": [
       "/var/lib/postgresql/18/data2"
     ]
+  },
+  "list all the file in '/var/lib/postgresql/18/data'": {
+    "type": "system",
+    "command": "ls",
+    "arguments": [
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "list all file in the data_directory": {
+    "type": "system",
+    "command": "ls",
+    "arguments": [
+      "/var/lib/postgresql/18/data"
+    ]
   }
 }
