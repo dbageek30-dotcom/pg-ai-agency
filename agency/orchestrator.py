@@ -186,7 +186,7 @@ def execute_action_pipeline(user_question: str):
     # Interception du court-circuit de commande système pure
     if rag_response == "DIRECT_SYSTEM_ACTION":
         if VERBOSE:
-            print("⚡ [ORCHESTRATOR] RAG ignoré (action système directe). Transmission du contexte topologique au 14B.")
+            print("⚡ [ORCHESTRATOR] RAG ignoré (action système directe). Transmission du contexte topologique {ORCHESTRATOR_MODEL}.")
         # On injecte une directive explicite au lieu d'une documentation pour aiguiller l'extraction
         rag_response = f"Direct infrastructure execution requested by user. Translate the user query directly using the provided remote agent whitelist context."
 
