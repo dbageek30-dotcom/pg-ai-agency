@@ -20,5 +20,40 @@
       "-D",
       "/var/lib/postgresql/18/data"
     ]
+  },
+  "give me database status": {
+    "type": "system",
+    "command": "psql",
+    "arguments": [
+      "-c",
+      "SELECT pg_is_in_recovery(), pg_current_wal_lsn(), pg_last_xact_replay_timestamp();"
+    ]
+  },
+  "give me database cluster status": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "status",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "stop database cluster stop": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "stop",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "start database cluster": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "start",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
   }
 }

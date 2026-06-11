@@ -9,11 +9,11 @@ import ollama
 
 # Alignement des chemins pour l'import de l'expert RAG
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import agency.expert as expert  
+import agency.expert as expert  # Contient clear_history, get_recent_history, etc.
 
 load_dotenv()
 
-ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "qwen2.5:32b-instruct")
+ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "qwen2.5:14b-instruct")
 REMOTE_AGENT_URL = os.getenv("REMOTE_AGENT_URL", "http://localhost:8432")
 REMOTE_AGENT_TOKEN = os.getenv("REMOTE_AGENT_TOKEN", "123")
 CACHE_ORCH_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_payload_cache.json")
@@ -21,17 +21,9 @@ CACHE_ORCH_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agen
 VERBOSE = False
 readline.parse_and_bind("tab: complete")
 
-def display_help():
-    print("\n💡 --- COMMANDES DISPONIBLES DANS L'AGENCE ---")
-    print("  /a <action>       : Mode ACTION (Pilote l'agent distant via le 30B)")
-    print("  /h ou /history    : Affiche l'historique conversationnel et les actions physiques")
-    print("  /c ou /clear      : Réinitialise la mémoire conversationnelle de l'expert RAG")
-    print("  /clear-payload    : Vide intégralement le cache local des charges utiles JSON")
-    print("  /d <ID>           : Supprime une entrée spécifique de la base de connaissances (RAG)")
-    print("  /v                : Bascule l'affichage du mode verbeux (DEBUG)")
-    print("  q ou exit         : Quitte l'orchestrateur")
-    print("------------------------------------------------\n")
-
+# ---------------------------------------------------------------------------
+# GESTION DU CACHE DE CHARGE UTILE (LLM ORCHESTRATOR)
+# ---------------------------------------------------------------------------
 def load_payload_cache() -> dict:
     if os.path.exists(CACHE_ORCH_PATH):
         try:
@@ -49,7 +41,11 @@ def save_payload_cache(cache_data: dict):
         if VERBOSE:
             print(f"⚠️ Erreur lors de l'écriture du cache payload : {e}")
 
+# ---------------------------------------------------------------------------
+# COMMUNICATIONS RÉSEAU
+# ---------------------------------------------------------------------------
 def call_pgagent(endpoint: str, payload: dict) -> dict:
+    """Envoie l'ordre HTTP au service pgagent distant"""
     url = f"{REMOTE_AGENT_URL}/api/v1/execute/{endpoint}"
     headers = {
         "Authorization": f"Bearer {REMOTE_AGENT_TOKEN}",
@@ -66,6 +62,7 @@ def call_pgagent(endpoint: str, payload: dict) -> dict:
         return {"status": "error", "message": f"Échec de connexion à pgagent : {e}"}
 
 def get_agent_context() -> dict:
+    """Interroge la route /health de l'agent pour récupérer la topologie et les chemins réels"""
     url = f"{REMOTE_AGENT_URL}/health"
     try:
         response = requests.get(url, timeout=5)
@@ -75,22 +72,28 @@ def get_agent_context() -> dict:
         pass
     return {}
 
+# ---------------------------------------------------------------------------
+# COUCHE EXTRACTION ET DIRECTIVES LLM
+# ---------------------------------------------------------------------------
 def parse_action_with_llm(user_question: str, rag_output: str, agent_context: dict) -> dict:
+    """Le LLM 14B extrait le code SQL, la config ou la commande système de la recommandation"""
     cache_key = user_question.strip().lower()
     payload_cache = load_payload_cache()
 
+    # 1. Tentative de récupération depuis le cache local du 14B
     if cache_key in payload_cache:
         if VERBOSE:
-            print("    🧠 [2/3] Extraction : ⚡ [PAYLOAD CACHE HIT] Récupération depuis le cache de l'orchestrateur...")
+            print("    🧠 [2/3] Extraction : ⚡ [PAYLOAD CACHE HIT] Récupération de la commande validée...")
         return payload_cache[cache_key]
 
+    # Injection dynamique du contexte de l'agent dans le prompt pour guider le LLM sur les chemins réels
     paths_context = agent_context.get("configured_paths", {})
     allowed_cmds = agent_context.get("whitelisted_system_commands", [])
     
     context_str = f"""
 --- REAL REMOTE AGENT CONTEXT ---
 PostgreSQL Configured Paths:
-- Target Database Directory (PGDATA): "/var/lib/postgresql/18/data" (STRICT MONO-INSTANCE)
+- data_directory / PGDATA: "{paths_context.get('postgresql.conf', 'Unknown')}" (Note: Usually located in the parent directory of this config file)
 - postgresql.conf path: "{paths_context.get('postgresql.conf', 'Unknown')}"
 - pg_hba.conf path: "{paths_context.get('pg_hba.conf', 'Unknown')}"
 
@@ -99,6 +102,7 @@ Strictly Allowed Base System/PostgreSQL Commands (Whitelist):
 ---------------------------------
 """
 
+    # 2. Cache Miss : Interrogation d'Ollama
     prompt = f"""You are a strict API translation layer. Your ONLY job is to convert a technical recommendation into a raw JSON object matching one of the schemas below.
 You are strictly FORBIDDEN to reply with prose, explanations, markdown blocks, or warnings. Return raw JSON.
 
@@ -115,6 +119,7 @@ CRITICAL PIPELINE ROUTING RULES:
 1. ANY request that modifies a PostgreSQL parameter (e.g., shared_buffers, port, max_connections) MUST EXCLUSIVELY use the "type": "config" schema.
 2. You are STRICTLY FORBIDDEN to use system commands like 'tee', 'sed', 'echo' to modify or append to "postgresql.conf" or "pg_hba.conf".
 3. The cluster path is strictly "/var/lib/postgresql/18/data". Do not assume or invent any other directory like data2.
+4. Interactive text editors or commands like 'vi' are STRICTLY FORBIDDEN.
 
 Expected JSON schema if it is a regular SQL query (SELECT, SHOW, ALTER SYSTEM, etc.):
 {{
@@ -122,7 +127,7 @@ Expected JSON schema if it is a regular SQL query (SELECT, SHOW, ALTER SYSTEM, e
     "query": "the raw SQL query string"
 }}
 
-Expected JSON schema if it is a physical parameter configuration change:
+Expected JSON schema if it is a physical parameter configuration change (shared_buffers, max_connections, etc.):
 CRITICAL: The "target" field MUST be EXACTLY the string "postgresql.conf" or "pg_hba.conf". DO NOT put absolute paths here.
 {{
     "type": "config",
@@ -130,7 +135,9 @@ CRITICAL: The "target" field MUST be EXACTLY the string "postgresql.conf" or "pg
     "line_to_add": "parameter = 'value'"
 }}
 
-Expected JSON schema if it requires executing an allowed system tool or PostgreSQL utility:
+Expected JSON schema if it requires executing an allowed system tool or PostgreSQL utility (like du, df, free, pg_ctl, pg_dump, etc.):
+NOTE: "command" MUST be a single exact string from the allowed base commands whitelist. All options or target paths must be separate strings inside the "arguments" list.
+Example for directory size: {{"type": "system", "command": "du", "arguments": ["-sh", "/var/lib/postgresql/18/data"]}}
 {{
     "type": "system",
     "command": "base_command_name_only",
@@ -138,6 +145,10 @@ Expected JSON schema if it requires executing an allowed system tool or PostgreS
 }}"""
 
     ollama_host = os.getenv("OLLAMA_HOST", "http://10.198.0.4:11434")
+
+    if VERBOSE:
+        print(f"    ⚙️ [DEBUG LLM] Connexion ciblée vers Ollama : {ollama_host}")
+        print(f"    ⚙️ [DEBUG LLM] Modèle demandé : {ORCHESTRATOR_MODEL}")
 
     try:
         client = ollama.Client(host=ollama_host)
@@ -149,25 +160,40 @@ Expected JSON schema if it requires executing an allowed system tool or PostgreS
         )
         
         raw_output = response['message']['content'].strip()
+        
+        if VERBOSE:
+            print(f"    ⚙️ [DEBUG LLM] Réponse brute reçue : {raw_output}")
+            
         parsed_payload = json.loads(raw_output)
         
-        if "type" in parsed_payload and any(k in parsed_payload for k in ["query", "line_to_add", "command"]):
+        # Sauvegarde au cache si l'extraction est conforme à l'un des trois types
+        if "type" in parsed_payload and ( "query" in parsed_payload or "line_to_add" in parsed_payload or "command" in parsed_payload ):
             payload_cache[cache_key] = parsed_payload
             save_payload_cache(payload_cache)
-            return parsed_payload
+            
+        return parsed_payload
 
     except Exception as e:
         if VERBOSE:
             print(f"    ❌ [DEBUG LLM ERROR] L'appel Ollama (extraction) a échoué : {e}")
-    return {"type": "none", "message": "Extraction invalide ou impossible."}
+        return {"type": "none", "message": f"Erreur d'extraction : {e}"}
 
+# ---------------------------------------------------------------------------
+# PIPELINE D'EXÉCUTION PRINCIPAL
+# ---------------------------------------------------------------------------
 def execute_action_pipeline(user_question: str):
+    """MODE AGENT ACTIF : RAG -> Extraction de commande -> Exécution sur VM-PG -> Synthèse"""
+    # Récupération dynamique du contexte de l'agent distant au début du pipeline
     agent_context = get_agent_context()
 
     print("\n📚 [1/3] RAG : Recherche de la procédure d'action...")
     rag_response = expert.ask_rag(user_question)
     
+    # Interception du court-circuit de commande système pure
     if rag_response == "DIRECT_SYSTEM_ACTION":
+        if VERBOSE:
+            print(f"⚡ [ORCHESTRATOR] RAG ignoré (action système directe). Transmission du contexte topologique {ORCHESTRATOR_MODEL}.")
+        # On injecte une directive explicite au lieu d'une documentation pour aiguiller l'extraction
         rag_response = f"Direct infrastructure execution requested by user. Translate the user query directly using the provided remote agent whitelist context."
 
     print(f"🧠 [2/3] Extraction : Génération de la charge utile via {ORCHESTRATOR_MODEL}...")
@@ -177,26 +203,24 @@ def execute_action_pipeline(user_question: str):
         print("⚠️ [ERREUR] L'Orchestrateur n'a pas pu isoler une commande structurelle reconnue par l'agent.")
         return
 
+    # Sécurisation applicative : Guardrail anti-chemin absolu pour les fichiers de conf
     if action["type"] == "config":
         target_clean = os.path.basename(action.get("target", ""))
         if target_clean not in ["postgresql.conf", "pg_hba.conf"]:
-            print(f"⚠️ [GUARDRAIL] Cible de configuration invalide détectée : {action.get('target')}")
+            print(f"⚠️ [GUARDRAIL] Cible de configuration invalide bloquée : {action.get('target')}")
             return
         action["target"] = target_clean
 
+    # Routage unifié vers le serveur d'exécution distant
     print(f"📡 [3/3] Exécution : Envoi de l'ordre ({action['type'].upper()}) à la vm-pg...")
-    execution_result = {}
-    sent_command = ""
-
     if action["type"] == "sql":
         if not action.get("query"):
-            print("⚠️ [ERREUR] Requête SQL définie mais vide.")
+            print("⚠️ [ERREUR] Requête SQL vide.")
             return
         execution_result = call_pgagent("sql", {"query": action["query"]})
         sent_command = action["query"]
-
     elif action["type"] == "config":
-        if not action.get("line_to_add"):
+        if not action.get("target") or not action.get("line_to_add"):
             print("⚠️ [ERREUR] Paramètres de configuration incomplets.")
             return
         execution_result = call_pgagent("config", {
@@ -204,8 +228,7 @@ def execute_action_pipeline(user_question: str):
             "line_to_add": action["line_to_add"]
         })
         sent_command = f"[{action['target']}] -> {action['line_to_add']}"
-
-    elif action["type"] == "system":
+    else:  # Type SYSTEM
         if not action.get("command"):
             print("⚠️ [ERREUR] Commande système vide.")
             return
@@ -215,7 +238,11 @@ def execute_action_pipeline(user_question: str):
         })
         sent_command = f"{action['command']} {' '.join(action.get('arguments', []))}"
 
-    print("\n✍️ Synthèse du rapport d'exécution...")
+    if VERBOSE:
+        print(f"    ⚙️ [DEBUG NETWORK] Retour brut reçu du serveur : {json.dumps(execution_result, indent=2)}")
+
+    # Restitution finale (Synthèse métier rédigée)
+    print("\n✍️ Syntèse du rapport d'exécution...")
     final_prompt = f"""You are an expert DBA. You executed an automated action on the remote server.
 Action Sent: {sent_command}
 Server Result: {json.dumps(execution_result)}
@@ -225,60 +252,75 @@ Provide a concise, professional summary of the results returned by the server to
     try:
         ollama_host = os.getenv("OLLAMA_HOST", "http://10.198.0.4:11434")
         client = ollama.Client(host=ollama_host)
+        
         response = client.chat(model=ORCHESTRATOR_MODEL, messages=[{"role": "user", "content": final_prompt}])
         rapport_final = response['message']['content'].strip()
         print(f"\n🎯 [RAPPORT ACTION] :\n{rapport_final}\n")
         
+        # 🟢 CORRECTION OPTION 1 : On enregistre proprement dans history_actions via expert
+        # action["type"] vaut "system", "sql" ou "config"
         raw_payload_json = json.dumps(action, ensure_ascii=False)
+        
         expert.save_action(
             user_query=user_question,
             action_type=action["type"],
             payload=raw_payload_json,
-            description=rapport_final  
+            description=rapport_final  # On met le résumé DBA en guise de description
         )
+
     except Exception as e:
         print(f"❌ Erreur lors de la génération du rapport final ou de l'historisation : {e}")
 
+
+
+# ---------------------------------------------------------------------------
+# SCRIPT ENTRYPOINT
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tower of Control - Central AI Orchestrator for PostgreSQL 18")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Active les logs de debug")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Active les logs de debug sous le capot dès le démarrage")
     args = parser.parse_args()
 
     VERBOSE = args.verbose
     expert.VERBOSE = args.verbose
 
     print("\n" + "="*75)
-    print("🗼 POSTGRESQL 18 AGENCY - CENTRAL ORCHESTRATOR (INTEGRAL)")
+    print("🗼 POSTGRESQL 18 AGENCY - CENTRAL ORCHESTRATOR")
+    print(f"    Mode verbeux initial : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}")
+    print("    -> Posez une question directement pour le mode INFORMATION 📖")
+    print("    -> Préfixez par /a ou /action pour déclencher une ACTION RÉELLE ⚡")
+    print("    -> Commandes :  /c (clear)  |  /h (history)  |  /d [id] (del cache sem)  |  /v (verbose)  |  /clear-payload")
     print("="*75 + "\n")
-    
+
     while True:
         try:
             prompt_prefix = "agency (verbose) > " if VERBOSE else "agency > "
             user_input = input(prompt_prefix).strip()
             if not user_input: continue
             if user_input.lower() in ['q', 'quit', 'exit']: break
-            
-            # --- BLOC ACTION DIRECTE ---
+
+            # ------------------------------------------------------------------
+            # 1. ROUTAGE DES INTENTIONS D'ACTION
+            # ------------------------------------------------------------------
             if user_input.startswith(('/a ', '/action ')):
-                try:
-                    clean_question = user_input.split(maxsplit=1)[1]
-                    execute_action_pipeline(clean_question)
-                except IndexError:
-                    print("❌ [ERREUR] Spécifiez une action après /a (Ex: /a show status)\n")
+                clean_question = user_input.split(maxsplit=1)[1]
+                execute_action_pipeline(clean_question)
                 continue
-            
-            # --- BLOC TRAITEMENT DES COMMANDES INTERACTIVES ---
+
+            # ------------------------------------------------------------------
+            # 2. INTERCEPTION DES COMMANDES INTERFACE
+            # ------------------------------------------------------------------
             elif user_input.startswith('/'):
                 parts = user_input.split()
                 cmd = parts[0].lower()
-                
+
                 if cmd in ['/clear', '/c']:
                     expert.clear_history()
-                    print("🧠 [SYSTEM] Session conversationnelle réinitialisée.\n")
-                    
+                    print("🧠 [SYSTEM] Session réinitialisée. (Le cache sémantique Postgres reste actif !)\n")
+
                 elif cmd in ['/history', '/h']:
                     history = expert.get_recent_history(limit=5)
-                    print("\n📜 --- SOUVENIRS DU MODE CONVERSATION ---")
+                    print("\n📜 --- SOUVENIRS DU MODE CONVERSATION (chat_history) ---")
                     if not history:
                         print("Aucun message textuel.")
                     else:
@@ -286,14 +328,15 @@ if __name__ == "__main__":
                             prefix = "👤 [VOUS]" if msg['role'] == 'user' else "🤖 [EXPERT]"
                             print(f"{prefix} : {msg['content']}")
 
+                    # 🟢 AJOUT : Récupération en direct des dernières actions de la table history_actions
                     print("\n⚡ --- DERNIÈRES ACTIONS EXÉCUTÉES (history_actions) ---")
-                    conn = None
                     try:
                         conn = expert.PG_POOL.getconn()
                         cur = conn.cursor()
-                        cur.execute("SELECT action_type, user_query, updated_at FROM rag.history_actions ORDER BY id DESC LIMIT 5;")
+                        cur.execute("SELECT action_type, user_query, created_at FROM rag.history_actions ORDER BY id DESC LIMIT 5;")
                         actions = cur.fetchall()
                         cur.close()
+                        expert.PG_POOL.putconn(conn)
 
                         if not actions:
                             print("Aucune action physique enregistrée.")
@@ -302,50 +345,55 @@ if __name__ == "__main__":
                                 print(f"⏱️ [{act[2].strftime('%H:%M:%S')}] [{act[0].upper()}] -> Requête : {act[1]}")
                     except Exception as e:
                         print(f"Impossible de charger l'historique des actions : {e}")
-                    finally:
-                        if conn:
-                            expert.PG_POOL.putconn(conn)
                     print("-----------------------------------\n")
 
                 elif cmd in ['/delete', '/d']:
                     if len(parts) < 2:
-                        print("❌ [ERREUR] Syntaxe : /d [ID]\n")
+                        print("❌ [ERREUR] Syntaxe incorrecte. Utilisation : /d [ID_DU_CACHE]\n")
                     else:
                         target_id = parts[1]
                         if expert.delete_cache_entry(target_id):
-                            print(f"✂️  [CACHE] L'entrée ID #{target_id} retirée.\n")
+                            print(f"✂️  [CACHE] L'entrée ID #{target_id} a été retirée définitivement du cache RAG.\n")
                         else:
-                            print(f"⚠️ [CACHE] Aucun ID #{target_id}.\n")
-                            
+                            print(f"⚠️ [CACHE] Aucune entrée trouvée avec l'ID #{target_id} dans le cache RAG.\n")
+
                 elif cmd == '/clear-payload':
                     if os.path.exists(CACHE_ORCH_PATH):
                         os.remove(CACHE_ORCH_PATH)
-                        print("🗑️  [CACHE ORCHESTRATOR] Cache des charges utiles vidé !\n")
+                        print("🗑️  [CACHE ORCHESTRATOR] Le cache local des charges utiles d'extraction a été vidé !\n")
                     else:
-                        print("ℹ️  [CACHE ORCHESTRATOR] Le cache est déjà vide.\n")
+                        print("ℹ️  [CACHE ORCHESTRATOR] Le cache d'extraction était déjà vide.\n")
 
                 elif cmd == '/v':
                     VERBOSE = not VERBOSE
                     expert.VERBOSE = VERBOSE
-                    print(f"🔬 [SYSTEM] Mode verbeux : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}\n")
+                    print(f"🔬 [SYSTEM] Mode verbeux global basculé : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}\n")
+
                 else:
-                    print(f"❌ [ERREUR] Commande '{cmd}' inconnue.")
-                    display_help()
+                    print(f"❌ [ERREUR] Commande '{cmd}' inconnue.\n")
                 continue
-            
-            # --- BLOC MODE INFORMATION (CONVERSATIONNEL) ---
+
+            # ------------------------------------------------------------------
+            # 3. MODE INFORMATION PAR DÉFAUT
+            # ------------------------------------------------------------------
             else:
                 print("\n📖 [MODE INFORMATION] Consultation de la base de connaissances...")
                 reponse = expert.ask_rag(user_input)
+
                 if reponse == "DIRECT_SYSTEM_ACTION":
-                    print("\n🤖 [EXPERT PG18] :\n💡 Commande système requise. Utilisez `/a` pour exécuter cette action physique.\n")
+                    print("\n🤖 [EXPERT PG18] :")
+                    print("💡 Cette question concerne une commande système (infrastructure).")
+                    print("Pour l'exécuter réellement sur l'environnement, utilisez le préfixe `/a` ou `/action`.\n")
                 else:
                     print(f"\n🤖 [EXPERT PG18] :\n{reponse}\n")
-                
+
         except KeyboardInterrupt:
             break
         except Exception as e:
             print(f"❌ Erreur générale : {e}")
 
+    # Nettoyage propre du pool Postgres
     if expert.PG_POOL:
+        if VERBOSE:
+            print("\n[SHUTDOWN] Fermeture du pool de connexions PostgreSQL...")
         expert.PG_POOL.closeall()
