@@ -223,7 +223,7 @@ async def execute_system_command(payload: SystemPayload):
     full_cmd = [binary_path] + payload.arguments
     
     try:
-        res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=10)
+        res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=30)
         return {
             "status": "success" if res.returncode == 0 else "error",
             "return_code": res.returncode,
@@ -231,6 +231,6 @@ async def execute_system_command(payload: SystemPayload):
             "stderr": res.stderr.strip()
         }
     except subprocess.TimeoutExpired:
-        return {"status": "error", "return_code": -1, "stdout": "", "stderr": "Délai d'exécution expiré (Timeout 10s)"}
+        return {"status": "error", "return_code": -1, "stdout": "", "stderr": "Délai d'exécution expiré (Timeout 30s)"}
     except Exception as e:
         return {"status": "error", "return_code": -1, "stdout": "", "stderr": f"Erreur d'exécution : {str(e)}"}

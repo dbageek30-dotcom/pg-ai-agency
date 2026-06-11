@@ -2,5 +2,23 @@
   "show me the data_directory path": {
     "type": "sql",
     "query": "SHOW data_directory;"
+  },
+  "start database": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "start",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "get database status": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "status",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
   }
 }
