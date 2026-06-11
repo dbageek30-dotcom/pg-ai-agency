@@ -8,7 +8,6 @@
     "pg_restore"
   ],
   "system_tools": [
-    "vi",
     "cat",
     "sed",
     "du",
