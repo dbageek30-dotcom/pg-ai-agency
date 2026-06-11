@@ -15,19 +15,19 @@ load_dotenv()
 
 ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "qwen2.5:14b-instruct")
 REMOTE_AGENT_URL = os.getenv("REMOTE_AGENT_URL", "http://localhost:8432")
-REMOTE_AGENT_TOKEN = os.getenv("REMOTE_AGENT_TOKEN", "TOKEN_GENERE_A_LA_VOLEE_S1Cr1t")
-CACHE_14B_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_payload_cache.json")
+REMOTE_AGENT_TOKEN = os.getenv("REMOTE_AGENT_TOKEN", "123")
+CACHE_ORCH_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_payload_cache.json")
 
 VERBOSE = False
 readline.parse_and_bind("tab: complete")
 
 # ---------------------------------------------------------------------------
-# GESTION DU CACHE DE CHARGE UTILE (LLM 14B)
+# GESTION DU CACHE DE CHARGE UTILE (LLM ORCHESTRATOR)
 # ---------------------------------------------------------------------------
 def load_payload_cache() -> dict:
-    if os.path.exists(CACHE_14B_PATH):
+    if os.path.exists(CACHE_ORCH_PATH):
         try:
-            with open(CACHE_14B_PATH, "r", encoding="utf-8") as f:
+            with open(CACHE_ORCH_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             return {}
@@ -35,7 +35,7 @@ def load_payload_cache() -> dict:
 
 def save_payload_cache(cache_data: dict):
     try:
-        with open(CACHE_14B_PATH, "w", encoding="utf-8") as f:
+        with open(CACHE_ORCH_PATH, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, indent=2, ensure_ascii=False)
     except Exception as e:
         if VERBOSE:
@@ -344,11 +344,11 @@ if __name__ == "__main__":
                             print(f"⚠️ [CACHE] Aucune entrée trouvée avec l'ID #{target_id} dans le cache RAG.\n")
                             
                 elif cmd == '/clear-payload':
-                    if os.path.exists(CACHE_14B_PATH):
-                        os.remove(CACHE_14B_PATH)
-                        print("🗑️  [CACHE 14B] Le cache local des charges utiles d'extraction a été vidé !\n")
+                    if os.path.exists(CACHE_ORCH_PATH):
+                        os.remove(CACHE_ORCH_PATH)
+                        print("🗑️  [CACHE ORCHESTRATOR] Le cache local des charges utiles d'extraction a été vidé !\n")
                     else:
-                        print("ℹ️  [CACHE 14B] Le cache d'extraction était déjà vide.\n")
+                        print("ℹ️  [CACHE ORCHESTRATOR] Le cache d'extraction était déjà vide.\n")
 
                 elif cmd == '/v':
                     VERBOSE = not VERBOSE

@@ -344,5 +344,30 @@
       "^Hugepagesize",
       "/proc/meminfo"
     ]
+  },
+  "check this parameter from the configuration file 'postgresql.conf'": {
+    "type": "system",
+    "command": "cat",
+    "arguments": [
+      "/var/lib/postgresql/18/data/postgresql.conf"
+    ]
+  },
+  "start database": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "start",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
+  },
+  "what is the status of the database cluster": {
+    "type": "system",
+    "command": "pg_ctl",
+    "arguments": [
+      "status",
+      "-D",
+      "/var/lib/postgresql/18/data"
+    ]
   }
 }
