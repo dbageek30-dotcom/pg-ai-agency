@@ -1,0 +1,6 @@
+{
+  "show me the data_directory path": {
+    "type": "sql",
+    "query": "SHOW data_directory;"
+  }
+}

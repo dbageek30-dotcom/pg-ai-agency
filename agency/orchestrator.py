@@ -13,13 +13,24 @@ import agency.expert as expert
 
 load_dotenv()
 
-ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "qwen2.5:32b-instruct") # Idéalement 30B+
+ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "qwen2.5:32b-instruct")
 REMOTE_AGENT_URL = os.getenv("REMOTE_AGENT_URL", "http://localhost:8432")
 REMOTE_AGENT_TOKEN = os.getenv("REMOTE_AGENT_TOKEN", "123")
 CACHE_ORCH_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_payload_cache.json")
 
 VERBOSE = False
 readline.parse_and_bind("tab: complete")
+
+def display_help():
+    print("\n💡 --- COMMANDES DISPONIBLES DANS L'AGENCE ---")
+    print("  /a <action>       : Mode ACTION (Pilote l'agent distant via le 30B)")
+    print("  /h ou /history    : Affiche l'historique conversationnel et les actions physiques")
+    print("  /c ou /clear      : Réinitialise la mémoire conversationnelle de l'expert RAG")
+    print("  /clear-payload    : Vide intégralement le cache local des charges utiles JSON")
+    print("  /d <ID>           : Supprime une entrée spécifique de la base de connaissances (RAG)")
+    print("  /v                : Bascule l'affichage du mode verbeux (DEBUG)")
+    print("  q ou exit         : Quitte l'orchestrateur")
+    print("------------------------------------------------\n")
 
 def load_payload_cache() -> dict:
     if os.path.exists(CACHE_ORCH_PATH):
@@ -70,7 +81,7 @@ def parse_action_with_llm(user_question: str, rag_output: str, agent_context: di
 
     if cache_key in payload_cache:
         if VERBOSE:
-            print("    🧠 [2/3] Extraction : ⚡ [PAYLOAD CACHE HIT] Récupération de la commande validée...")
+            print("    🧠 [2/3] Extraction : ⚡ [PAYLOAD CACHE HIT] Récupération depuis le cache de l'orchestrateur...")
         return payload_cache[cache_key]
 
     paths_context = agent_context.get("configured_paths", {})
@@ -140,7 +151,6 @@ Expected JSON schema if it requires executing an allowed system tool or PostgreS
         raw_output = response['message']['content'].strip()
         parsed_payload = json.loads(raw_output)
         
-        # Validation des clés minimales pour éviter un crash d'exécution
         if "type" in parsed_payload and any(k in parsed_payload for k in ["query", "line_to_add", "command"]):
             payload_cache[cache_key] = parsed_payload
             save_payload_cache(payload_cache)
@@ -167,7 +177,6 @@ def execute_action_pipeline(user_question: str):
         print("⚠️ [ERREUR] L'Orchestrateur n'a pas pu isoler une commande structurelle reconnue par l'agent.")
         return
 
-    # Guardrail : Sécurisation de la cible de config pour le mono-instance
     if action["type"] == "config":
         target_clean = os.path.basename(action.get("target", ""))
         if target_clean not in ["postgresql.conf", "pg_hba.conf"]:
@@ -239,7 +248,7 @@ if __name__ == "__main__":
     expert.VERBOSE = args.verbose
 
     print("\n" + "="*75)
-    print("🗼 POSTGRESQL 18 AGENCY - CENTRAL ORCHESTRATOR (ALIGNED)")
+    print("🗼 POSTGRESQL 18 AGENCY - CENTRAL ORCHESTRATOR (INTEGRAL)")
     print("="*75 + "\n")
     
     while True:
@@ -249,18 +258,23 @@ if __name__ == "__main__":
             if not user_input: continue
             if user_input.lower() in ['q', 'quit', 'exit']: break
             
+            # --- BLOC ACTION DIRECTE ---
             if user_input.startswith(('/a ', '/action ')):
-                clean_question = user_input.split(maxsplit=1)[1]
-                execute_action_pipeline(clean_question)
+                try:
+                    clean_question = user_input.split(maxsplit=1)[1]
+                    execute_action_pipeline(clean_question)
+                except IndexError:
+                    print("❌ [ERREUR] Spécifiez une action après /a (Ex: /a show status)\n")
                 continue
             
+            # --- BLOC TRAITEMENT DES COMMANDES INTERACTIVES ---
             elif user_input.startswith('/'):
                 parts = user_input.split()
                 cmd = parts[0].lower()
                 
                 if cmd in ['/clear', '/c']:
                     expert.clear_history()
-                    print("🧠 [SYSTEM] Session réinitialisée.\n")
+                    print("🧠 [SYSTEM] Session conversationnelle réinitialisée.\n")
                     
                 elif cmd in ['/history', '/h']:
                     history = expert.get_recent_history(limit=5)
@@ -277,7 +291,6 @@ if __name__ == "__main__":
                     try:
                         conn = expert.PG_POOL.getconn()
                         cur = conn.cursor()
-                        # CORRECTION DU NOM DE COLONNE CRITICAL BUG: updated_at
                         cur.execute("SELECT action_type, user_query, updated_at FROM rag.history_actions ORDER BY id DESC LIMIT 5;")
                         actions = cur.fetchall()
                         cur.close()
@@ -309,21 +322,23 @@ if __name__ == "__main__":
                         os.remove(CACHE_ORCH_PATH)
                         print("🗑️  [CACHE ORCHESTRATOR] Cache des charges utiles vidé !\n")
                     else:
-                        print("ℹ️  [CACHE ORCHESTRATOR] Déjà vide.\n")
+                        print("ℹ️  [CACHE ORCHESTRATOR] Le cache est déjà vide.\n")
 
                 elif cmd == '/v':
                     VERBOSE = not VERBOSE
                     expert.VERBOSE = VERBOSE
                     print(f"🔬 [SYSTEM] Mode verbeux : {'ACTIVÉ 🟢' if VERBOSE else 'DÉSACTIVÉ ⚪'}\n")
                 else:
-                    print(f"❌ [ERREUR] Commande '{cmd}' inconnue.\n")
+                    print(f"❌ [ERREUR] Commande '{cmd}' inconnue.")
+                    display_help()
                 continue
             
+            # --- BLOC MODE INFORMATION (CONVERSATIONNEL) ---
             else:
                 print("\n📖 [MODE INFORMATION] Consultation de la base de connaissances...")
                 reponse = expert.ask_rag(user_input)
                 if reponse == "DIRECT_SYSTEM_ACTION":
-                    print("\n🤖 [EXPERT PG18] :\n💡 Commande système requise. Utilisez `/a` pour exécuter.\n")
+                    print("\n🤖 [EXPERT PG18] :\n💡 Commande système requise. Utilisez `/a` pour exécuter cette action physique.\n")
                 else:
                     print(f"\n🤖 [EXPERT PG18] :\n{reponse}\n")
                 
