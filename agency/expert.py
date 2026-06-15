@@ -9,6 +9,8 @@ import re
 from datetime import datetime
 from dotenv import load_dotenv
 import ollama
+from ollama  import Client
+remote_client = Client(host='http://10.198.0.2:11434')
 from flashrank import Ranker, RerankRequest
 
 # Désactivation des logs verbeux des librairies tierces
@@ -25,7 +27,7 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
-LLM_MODEL = os.getenv("LLM_MODEL", "qwen2.5:7b-instruct")
+LLM_MODEL = os.getenv("LLM_MODEL", "qwen3:30b-instruct")
 RERANK_MODEL = os.getenv("RERANK_MODEL", "ms-marco-TinyBERT-L-2-v2")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

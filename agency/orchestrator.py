@@ -13,7 +13,7 @@ import agency.expert as expert  # Contient clear_history, get_recent_history, et
 
 load_dotenv()
 
-ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "qwen2.5:14b-instruct")
+ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "qwen2.5:7b-instruct")
 REMOTE_AGENT_URL = os.getenv("REMOTE_AGENT_URL", "http://localhost:8432")
 REMOTE_AGENT_TOKEN = os.getenv("REMOTE_AGENT_TOKEN", "123")
 CACHE_ORCH_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_payload_cache.json")
@@ -144,7 +144,7 @@ Example for directory size: {{"type": "system", "command": "du", "arguments": ["
     "arguments": ["arg1", "arg2"]
 }}"""
 
-    ollama_host = os.getenv("OLLAMA_HOST", "http://10.198.0.4:11434")
+    ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
     if VERBOSE:
         print(f"    ⚙️ [DEBUG LLM] Connexion ciblée vers Ollama : {ollama_host}")
